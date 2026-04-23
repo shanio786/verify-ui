@@ -54,3 +54,8 @@ Thumbs.db
 replit.md
 .replit-artifact/
 artifacts/*/.replit-artifact/
+
+# Repl-only artifacts (not part of public deliverable)
+artifacts/api-server/
+artifacts/mockup-sandbox/
+attached_assets/
