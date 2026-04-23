@@ -131,7 +131,7 @@ function LearningPage({
           <div>
             <strong>Start with a quick self-check</strong>
             <p style={{ margin: "0.2rem 0 0.5rem", fontSize: "0.87rem" }}>
-              A 6-question assessment helps measure your starting skills before learning.
+              A {selfSkillsAssessmentData.initial.items.length}-question scenario assessment helps measure your starting skills before learning.
             </p>
             <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-pre")}>
               Start Self-Assessment
@@ -144,7 +144,7 @@ function LearningPage({
         <div className="alert alert-green">
           <span>✅</span>
           <span>
-            <strong>Initial assessment complete</strong> — you scored {state.pretestScore}/6. Work through the modules below, then take the final assessment.
+            <strong>Initial assessment complete</strong> — you scored {state.pretestScore}/{selfSkillsAssessmentData.initial.items.length}. Work through the modules below, then take the final assessment.
           </span>
         </div>
       )}
@@ -165,7 +165,7 @@ function LearningPage({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
             <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
               Status: <strong style={{ color: pretestDone ? "var(--success)" : "var(--primary)" }}>
-                {pretestDone ? `Completed (${state.pretestScore}/6)` : "Available"}
+                {pretestDone ? `Completed (${state.pretestScore}/${selfSkillsAssessmentData.initial.items.length})` : "Available"}
               </strong>
             </span>
             <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-pre")}>
@@ -189,7 +189,7 @@ function LearningPage({
             <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
               Status: <strong style={{ color: allModulesDone ? "var(--success)" : "var(--text-muted)" }}>
                 {state.selfAssessments.final.completed
-                  ? `Completed (${state.posttestScore}/6)`
+                  ? `Completed (${state.posttestScore}/${selfSkillsAssessmentData.final.items.length})`
                   : allModulesDone ? "Unlocked" : `Locked (${doneModules}/${moduleData.length} modules done)`}
               </strong>
             </span>
@@ -609,13 +609,13 @@ function MePage({ state, setPage }: { state: AppState; setPage: (p: Page) => voi
           <div className="score-box">
             <div className="score-box-label">Initial Self-Assessment</div>
             {state.pretestScore !== null
-              ? <div className="score-big">{state.pretestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/6</span></div>
+              ? <div className="score-big">{state.pretestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/{selfSkillsAssessmentData.initial.items.length}</span></div>
               : <div style={{ fontSize: "1.4rem", textAlign: "center", padding: "1rem 0", color: "var(--text-muted)" }}>Not done</div>}
           </div>
           <div className="score-box">
             <div className="score-box-label">Final Self-Assessment</div>
             {state.posttestScore !== null
-              ? <div className="score-big">{state.posttestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/6</span></div>
+              ? <div className="score-big">{state.posttestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/{selfSkillsAssessmentData.final.items.length}</span></div>
               : <div style={{ fontSize: "1.4rem", textAlign: "center", padding: "1rem 0", color: "var(--text-muted)" }}>🔒 Locked</div>}
           </div>
         </div>
@@ -683,6 +683,7 @@ function AssessmentPage({
   const item: AssessItem = data.items[currentIdx];
   const currentAns = answers[currentIdx];
   const isLast = currentIdx === data.items.length - 1;
+  const totalQ = data.items.length;
 
   function select(i: number) {
     if (isDone) return;
@@ -710,13 +711,20 @@ function AssessmentPage({
     return (
       <div className="page-wrap">
         <div className="card assess-wrap" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>{(score ?? 0) >= 5 ? "🎉" : (score ?? 0) >= 3 ? "👍" : "📚"}</div>
-          <h2 style={{ fontWeight: 800, fontSize: "1.4rem" }}>Assessment Complete!</h2>
-          <p style={{ color: "var(--text-muted)", margin: "0.3rem 0 0.5rem" }}>You scored</p>
-          <div className="score-big">{score}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/6</span></div>
-          <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", margin: "0.5rem 0 1.5rem" }}>
-            {(score ?? 0) >= 5 ? "Excellent — strong critical thinking skills." : (score ?? 0) >= 3 ? "Good start — modules will sharpen your skills." : "The modules will help you build these skills step by step."}
-          </p>
+          {(() => {
+            const pct = ((score ?? 0) / totalQ) * 100;
+            const emoji = pct >= 80 ? "🎉" : pct >= 50 ? "👍" : "📚";
+            const msg = pct >= 80 ? "Excellent — strong critical thinking skills." : pct >= 50 ? "Good start — modules will sharpen your skills." : "The modules will help you build these skills step by step.";
+            return (
+              <>
+                <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>{emoji}</div>
+                <h2 style={{ fontWeight: 800, fontSize: "1.4rem" }}>Assessment Complete!</h2>
+                <p style={{ color: "var(--text-muted)", margin: "0.3rem 0 0.5rem" }}>You scored</p>
+                <div className="score-big">{score}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/{totalQ}</span></div>
+                <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", margin: "0.5rem 0 1.5rem" }}>{msg}</p>
+              </>
+            );
+          })()}
           {data.items.map((q, i) => {
             const ans = finalAns[i];
             const correct = ans === q.correctIndex;
