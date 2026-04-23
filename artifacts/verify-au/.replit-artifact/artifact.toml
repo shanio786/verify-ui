@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "VERIFY-AU"
+version = "1.0.0"
+id = "artifacts/verify-au"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21268
+
+[services.development]
+run = "pnpm --filter @workspace/verify-au run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/verify-au", "run", "build" ]
+publicDir = "artifacts/verify-au/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21268"
+BASE_PATH = "/"

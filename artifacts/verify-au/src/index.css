@@ -1,0 +1,864 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --font-sans: var(--app-font-sans);
+  --font-mono: var(--app-font-mono);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --background: 220 20% 97%;
+  --foreground: 220 25% 15%;
+  --border: 220 15% 88%;
+  --input: 220 15% 88%;
+  --ring: 213 70% 38%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 25% 15%;
+  --primary: 213 70% 38%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 43 90% 50%;
+  --secondary-foreground: 220 25% 15%;
+  --muted: 220 15% 93%;
+  --muted-foreground: 220 15% 45%;
+  --accent: 213 40% 92%;
+  --accent-foreground: 213 70% 30%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --app-font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --app-font-mono: Menlo, monospace;
+  --radius: 0.6rem;
+}
+
+@layer base {
+  * { @apply border-border box-border; }
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    line-height: 1.6;
+  }
+}
+
+/* Custom app styles */
+.nav-bar {
+  background: hsl(213, 70%, 38%);
+  color: white;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.nav-logo {
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
+}
+
+.nav-logo span {
+  color: hsl(43, 90%, 60%);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nav-btn {
+  background: transparent;
+  color: rgba(255,255,255,0.8);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.15s;
+}
+
+.nav-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.nav-btn.active {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.page-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* Cards */
+.card {
+  background: white;
+  border: 1px solid hsl(220, 15%, 88%);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* Hero card */
+.hero-card {
+  background: linear-gradient(135deg, hsl(213, 70%, 38%) 0%, hsl(213, 60%, 28%) 100%);
+  color: white;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  margin-bottom: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 160px;
+  height: 160px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+
+.hero-card h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.hero-card p {
+  color: rgba(255,255,255,0.82);
+  font-size: 0.95rem;
+}
+
+/* Sections */
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: hsl(220, 25%, 25%);
+  margin: 1.5rem 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Grids */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; }
+
+/* Module cards */
+.module-card {
+  background: white;
+  border: 1px solid hsl(220, 15%, 88%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  border-color: hsl(213, 70%, 60%);
+}
+
+.module-card.done {
+  border-color: hsl(145, 60%, 60%);
+  background: hsl(145, 40%, 98%);
+}
+
+.module-card.review {
+  border-color: hsl(0, 72%, 51%);
+  background: hsl(0, 40%, 98%);
+}
+
+.module-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: hsl(213, 40%, 92%);
+  color: hsl(213, 70%, 30%);
+  margin-bottom: 0.5rem;
+}
+
+.module-card h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: hsl(220, 25%, 15%);
+}
+
+.module-card p {
+  font-size: 0.82rem;
+  color: hsl(220, 15%, 50%);
+  margin: 0;
+}
+
+.module-status-tag {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.status-done {
+  background: hsl(145, 60%, 88%);
+  color: hsl(145, 50%, 25%);
+}
+
+.status-review {
+  background: hsl(0, 72%, 90%);
+  color: hsl(0, 72%, 30%);
+}
+
+/* Progress bar */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: hsl(220, 15%, 90%);
+  border-radius: 999px;
+  margin-top: 0.75rem;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: hsl(213, 70%, 50%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+/* Misinfo This Week */
+.misinfo-card {
+  background: linear-gradient(135deg, hsl(43, 90%, 50%) 0%, hsl(35, 90%, 50%) 100%);
+  color: hsl(43, 50%, 15%);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.25);
+}
+
+.misinfo-card .tag {
+  display: inline-block;
+  background: rgba(0,0,0,0.15);
+  color: hsl(43, 50%, 15%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.misinfo-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.misinfo-card p {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin: 0;
+}
+
+/* Buttons */
+.btn {
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-primary {
+  background: hsl(213, 70%, 38%);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: hsl(213, 70%, 32%);
+}
+
+.btn-secondary {
+  background: hsl(43, 90%, 50%);
+  color: hsl(43, 50%, 15%);
+}
+
+.btn-secondary:hover {
+  background: hsl(43, 90%, 44%);
+}
+
+.btn-outline {
+  background: white;
+  border: 1px solid hsl(220, 15%, 82%);
+  color: hsl(220, 25%, 30%);
+}
+
+.btn-outline:hover {
+  border-color: hsl(213, 70%, 50%);
+  color: hsl(213, 70%, 38%);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: hsl(220, 25%, 45%);
+}
+
+.btn-ghost:hover {
+  background: hsl(220, 15%, 93%);
+  color: hsl(220, 25%, 20%);
+}
+
+.btn-danger {
+  background: hsl(0, 72%, 51%);
+  color: white;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+/* Flashcard */
+.flashcard {
+  background: white;
+  border: 1px solid hsl(220, 15%, 88%);
+  border-radius: 1rem;
+  padding: 2.5rem;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  transition: all 0.3s;
+}
+
+.flashcard h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: hsl(213, 70%, 35%);
+  margin-bottom: 1rem;
+}
+
+.flashcard p {
+  font-size: 0.95rem;
+  color: hsl(220, 20%, 30%);
+  line-height: 1.7;
+  margin-bottom: 0;
+}
+
+.au-box {
+  background: hsl(145, 40%, 95%);
+  border-left: 3px solid hsl(145, 50%, 45%);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  margin-top: 1.25rem;
+  font-size: 0.87rem;
+  color: hsl(145, 40%, 25%);
+}
+
+.reflect-box {
+  background: hsl(43, 90%, 95%);
+  border-left: 3px solid hsl(43, 90%, 55%);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  margin-top: 0.75rem;
+  font-size: 0.87rem;
+  color: hsl(43, 50%, 25%);
+}
+
+.card-counter {
+  font-size: 0.85rem;
+  color: hsl(220, 15%, 55%);
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.flashcard-nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* Practice cards */
+.practice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.practice-card {
+  background: white;
+  border: 1px solid hsl(220, 15%, 88%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.practice-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  border-color: hsl(213, 70%, 60%);
+}
+
+.practice-card.done-card {
+  border-color: hsl(145, 60%, 60%);
+  background: hsl(145, 30%, 98%);
+}
+
+.practice-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(213, 60%, 45%);
+  margin-bottom: 0.35rem;
+}
+
+.practice-card h4 {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: hsl(220, 25%, 20%);
+  margin-bottom: 0.3rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.practice-card p {
+  font-size: 0.78rem;
+  color: hsl(220, 15%, 55%);
+  margin: 0;
+}
+
+.source-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: hsl(220, 15%, 92%);
+  color: hsl(220, 20%, 40%);
+  margin-bottom: 0.5rem;
+}
+
+/* Scenario page */
+.scenario-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.post-bubble {
+  background: hsl(220, 20%, 96%);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+  border-left: 3px solid hsl(213, 70%, 55%);
+}
+
+.context-box {
+  background: hsl(43, 90%, 96%);
+  border: 1px solid hsl(43, 60%, 82%);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.83rem;
+  color: hsl(43, 40%, 30%);
+  margin-top: 0.75rem;
+}
+
+/* Option buttons */
+.option-btn {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.6rem;
+  background: white;
+  border: 1.5px solid hsl(220, 15%, 85%);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: hsl(220, 25%, 25%);
+  transition: all 0.15s;
+  display: block;
+}
+
+.option-btn:hover {
+  border-color: hsl(213, 70%, 55%);
+  background: hsl(213, 40%, 97%);
+}
+
+.option-btn.selected {
+  border-color: hsl(213, 70%, 38%);
+  background: hsl(213, 40%, 94%);
+  color: hsl(213, 70%, 28%);
+}
+
+.option-btn.correct {
+  border-color: hsl(145, 60%, 45%);
+  background: hsl(145, 40%, 94%);
+  color: hsl(145, 50%, 22%);
+}
+
+.option-btn.incorrect {
+  border-color: hsl(0, 72%, 51%);
+  background: hsl(0, 60%, 96%);
+  color: hsl(0, 72%, 35%);
+}
+
+/* Verdict box */
+.verdict-box {
+  background: hsl(213, 40%, 96%);
+  border: 1px solid hsl(213, 40%, 82%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.verdict-box h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: hsl(213, 70%, 30%);
+  margin-bottom: 0.75rem;
+}
+
+.verdict-line {
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+  color: hsl(220, 20%, 30%);
+}
+
+.verdict-line strong {
+  color: hsl(220, 25%, 20%);
+}
+
+/* Step indicator */
+.steps-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.step-dot.done { background: hsl(145, 60%, 45%); color: white; }
+.step-dot.active { background: hsl(213, 70%, 38%); color: white; }
+.step-dot.pending { background: hsl(220, 15%, 88%); color: hsl(220, 15%, 55%); }
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: hsl(220, 15%, 88%);
+}
+
+/* Me page */
+.badge-grid {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.badge-item {
+  background: white;
+  border: 1px solid hsl(220, 15%, 88%);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  text-align: center;
+  min-width: 100px;
+  transition: all 0.2s;
+}
+
+.badge-item.earned {
+  border-color: hsl(43, 90%, 60%);
+  background: hsl(43, 90%, 96%);
+}
+
+.badge-icon { font-size: 1.75rem; margin-bottom: 0.35rem; }
+.badge-name { font-size: 0.75rem; font-weight: 600; color: hsl(220, 20%, 40%); }
+
+/* Skill improvement section */
+.skill-compare {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  background: hsl(220, 15%, 96%);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.skill-val {
+  flex: 1;
+}
+
+.skill-val h2 { font-size: 2rem; font-weight: 800; color: hsl(213, 70%, 38%); }
+.skill-val p { font-size: 0.78rem; color: hsl(220, 15%, 50%); margin: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.skill-divider {
+  width: 1px;
+  background: hsl(220, 15%, 82%);
+}
+
+/* Assessment */
+.assess-card {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.assess-post {
+  background: hsl(220, 20%, 97%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  border-left: 3px solid hsl(213, 70%, 55%);
+}
+
+/* Summary/Alert boxes */
+.alert-box {
+  border-radius: 0.6rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.87rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.alert-info { background: hsl(213, 40%, 94%); border: 1px solid hsl(213, 40%, 80%); color: hsl(213, 60%, 28%); }
+.alert-success { background: hsl(145, 40%, 94%); border: 1px solid hsl(145, 40%, 75%); color: hsl(145, 50%, 22%); }
+.alert-warning { background: hsl(43, 90%, 95%); border: 1px solid hsl(43, 60%, 75%); color: hsl(43, 50%, 25%); }
+.alert-danger { background: hsl(0, 60%, 95%); border: 1px solid hsl(0, 60%, 80%); color: hsl(0, 72%, 30%); }
+
+/* Tab buttons */
+.tab-switch {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid hsl(220, 15%, 88%);
+  margin-bottom: 1.25rem;
+}
+
+.tab-btn {
+  padding: 0.6rem 1.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: hsl(220, 15%, 55%);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+
+.tab-btn.active {
+  color: hsl(213, 70%, 38%);
+  border-bottom-color: hsl(213, 70%, 38%);
+}
+
+.tab-btn:hover { color: hsl(220, 25%, 30%); }
+
+/* Back button */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: hsl(213, 70%, 38%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.5rem 0;
+  margin-bottom: 0.75rem;
+  transition: opacity 0.15s;
+}
+
+.back-btn:hover { opacity: 0.75; }
+
+/* Complete box */
+.complete-box {
+  background: hsl(145, 40%, 95%);
+  border: 1px solid hsl(145, 40%, 78%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  text-align: center;
+  margin-top: 1.25rem;
+}
+
+/* Current activity */
+.current-card {
+  background: linear-gradient(135deg, hsl(213, 40%, 94%) 0%, hsl(213, 30%, 97%) 100%);
+  border: 1px solid hsl(213, 40%, 80%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Self-skills assessment grid */
+.assess-module-card {
+  background: white;
+  border: 1px solid hsl(220, 15%, 88%);
+  border-radius: 0.75rem;
+  padding: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.assess-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .practice-grid, .scenario-wrap {
+    grid-template-columns: 1fr;
+  }
+  .skill-compare { flex-direction: column; gap: 1rem; }
+  .skill-divider { width: 100%; height: 1px; }
+}
+
+/* Score indicator */
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.score-high { background: hsl(145, 40%, 90%); color: hsl(145, 50%, 22%); }
+.score-mid  { background: hsl(43, 90%, 90%);  color: hsl(43, 50%, 22%); }
+.score-low  { background: hsl(0, 60%, 92%);   color: hsl(0, 72%, 28%); }
+
+/* locked */
+.locked-val {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: hsl(220, 15%, 65%);
+}
+
+/* Module progress in me page */
+.mod-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.mod-progress-label { font-size: 0.85rem; font-weight: 600; min-width: 160px; color: hsl(220, 20%, 30%); }
+.mod-progress-bar { flex: 1; height: 8px; background: hsl(220, 15%, 90%); border-radius: 999px; overflow: hidden; }
+.mod-progress-fill { height: 100%; background: hsl(213, 70%, 50%); border-radius: 999px; }
+.mod-progress-pct { font-size: 0.8rem; color: hsl(220, 15%, 55%); min-width: 36px; text-align: right; }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: hsl(220, 15%, 60%);
+}
+.empty-state p { margin-top: 0.5rem; font-size: 0.9rem; }
+
+/* Verdict result chip */
+.verdict-chip {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.verdict-false { background: hsl(0, 60%, 92%); color: hsl(0, 72%, 28%); }
+.verdict-true { background: hsl(145, 40%, 90%); color: hsl(145, 50%, 22%); }
+.verdict-misleading { background: hsl(43, 90%, 90%); color: hsl(43, 50%, 22%); }
+.verdict-unsupported { background: hsl(270, 40%, 92%); color: hsl(270, 50%, 30%); }
