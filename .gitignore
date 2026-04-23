@@ -47,3 +47,10 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Workspace local config (do not publish)
+.replit
+.replitignore
+replit.md
+.replit-artifact/
+artifacts/*/.replit-artifact/
