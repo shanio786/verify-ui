@@ -43,85 +43,40 @@ const defaultState: AppState = {
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem("verifyAuState_v3");
-    if (raw) {
-      const saved = JSON.parse(raw);
-      return { ...defaultState, ...saved };
-    }
+    if (raw) return { ...defaultState, ...JSON.parse(raw) };
   } catch {}
   return { ...defaultState };
 }
 
 function saveState(s: AppState) {
-  try {
-    localStorage.setItem("verifyAuState_v3", JSON.stringify(s));
-  } catch {}
+  try { localStorage.setItem("verifyAuState_v3", JSON.stringify(s)); } catch {}
 }
 
-// --- MODULE ICON COLOURS ---
-const moduleColors = [
-  { bg: "#e0eeff", icon: "🔍" },
-  { bg: "#fff3e0", icon: "🎭" },
-  { bg: "#fce4ec", icon: "😤" },
-  { bg: "#e8f5e9", icon: "🍒" },
-  { bg: "#f3e5f5", icon: "📊" },
-];
-
-// --- VERDICT CHIP ---
-function VerdictChip({ v }: { v: string }) {
-  const cls =
-    v === "False"
-      ? "verdict-false"
-      : v === "True"
-      ? "verdict-true"
-      : v === "Misleading"
-      ? "verdict-misleading"
-      : "verdict-unsupported";
-  return <span className={`verdict-chip ${cls}`}>{v}</span>;
-}
-
-// ===================== NAVBAR =====================
-function Navbar({
-  page,
-  setPage,
-}: {
-  page: Page;
-  setPage: (p: Page) => void;
-}) {
+// ─── NAVBAR ────────────────────────────────────────────────────────────────
+function Navbar({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
+  const isL = page === "learning" || page === "lesson" || page === "assessment-pre" || page === "assessment-post";
+  const isP = page === "practice" || page === "scenario";
+  const isM = page === "me";
   return (
-    <nav className="nav-bar">
-      <div className="nav-logo">
-        VERIFY<span>-AU</span>
-      </div>
+    <nav>
+      <div className="logo">VERIFY-AU</div>
       <div className="nav-links">
-        {(["learning", "practice", "me"] as Page[]).map((p) => (
-          <button
-            key={p}
-            className={`nav-btn ${page === p || (page === "lesson" && p === "learning") || (page === "scenario" && p === "practice") ? "active" : ""}`}
-            onClick={() => setPage(p)}
-          >
-            {p === "learning" ? "Learning" : p === "practice" ? "Practice" : "Me"}
-          </button>
-        ))}
+        <button className={isL ? "active" : ""} onClick={() => setPage("learning")}>Learning</button>
+        <button className={isP ? "active" : ""} onClick={() => setPage("practice")}>Practice</button>
+        <button className={isM ? "active" : ""} onClick={() => setPage("me")}>Me</button>
       </div>
     </nav>
   );
 }
 
-// ===================== LEARNING PAGE =====================
+// ─── LEARNING HUB ──────────────────────────────────────────────────────────
 function LearningPage({
-  state,
-  setState,
-  setPage,
-  setScenarioItem,
+  state, setState, setPage, setScenarioItem,
 }: {
-  state: AppState;
-  setState: (s: AppState) => void;
-  setPage: (p: Page) => void;
+  state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
   setScenarioItem: (item: PracticeItem) => void;
 }) {
   const pretestDone = state.selfAssessments.initial.completed;
-  const totalPracticed = state.completedPractices.length;
-  const totalModules = moduleData.length;
   const doneModules = state.completedModules.length;
 
   function openModule(idx: number) {
@@ -129,104 +84,64 @@ function LearningPage({
     setPage("lesson");
   }
 
-  function openMisinfoWeek() {
-    setScenarioItem(misinfoThisWeekItem);
-    setPage("scenario");
-  }
-
   return (
-    <div className="page-wrap">
-      {/* Hero */}
-      <div className="hero-card">
-        <div className="nav-logo" style={{ fontSize: "0.8rem", opacity: 0.7, marginBottom: "0.25rem" }}>
-          VERIFY-AU
-        </div>
-        <h1>Hi, Freya 👋</h1>
+    <div className="container">
+      {/* Header card */}
+      <div className="card">
+        <h1 style={{ fontSize: "1.6rem", fontWeight: 900, marginBottom: "0.5rem" }}>Hi, Freya</h1>
         <p>Equip yourself with the tools to navigate Australian election information.</p>
-        {pretestDone && (
-          <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <span style={{ background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: "999px", fontSize: "0.82rem" }}>
-              {doneModules}/{totalModules} modules done
-            </span>
-            <span style={{ background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: "999px", fontSize: "0.82rem" }}>
-              {totalPracticed} scenarios practiced
-            </span>
+
+        {/* Pre-test nudge */}
+        {!pretestDone && (
+          <div className="recommend-box" style={{ marginTop: "1rem", marginBottom: 0 }}>
+            <strong>💡 Tip:</strong> You have not completed the initial self-skills assessment yet. This short card-based check helps you understand your current skills before learning.
+            <button className="btn" style={{ marginLeft: "10px" }} onClick={() => setPage("assessment-pre")}>
+              Start Self-Assessment
+            </button>
+          </div>
+        )}
+
+        {/* Pre-test done */}
+        {pretestDone && state.pretestScore !== null && (
+          <div className="summary-box" style={{ marginTop: "1rem", marginBottom: 0 }}>
+            <strong>Assessment complete.</strong> You scored {state.pretestScore}/6 on the initial self-skills assessment.{" "}
+            {doneModules}/{moduleData.length} modules done.
           </div>
         )}
       </div>
 
-      {/* Resume current activity */}
+      {/* Current Activity */}
       {state.lastLearningModule !== null && !state.completedModules.includes(state.lastLearningModule) && (
-        <div className="current-card">
-          <div>
-            <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "#1e5fab", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
-              Continue where you left off
-            </div>
-            <div style={{ fontWeight: 600, color: "#1a2e4a" }}>
-              {moduleData[state.lastLearningModule].title}
-            </div>
-            <div style={{ fontSize: "0.82rem", color: "#666", marginTop: "0.15rem" }}>
-              Card {state.currentCard + 1} of {moduleData[state.lastLearningModule].cards.length}
-            </div>
-          </div>
-          <button className="btn btn-primary" onClick={() => openModule(state.lastLearningModule!)}>
-            Resume
-          </button>
+        <div className="card">
+          <span className="label">Current Activity</span>
+          <h3 style={{ marginTop: "0.4rem", marginBottom: "0.25rem" }}>
+            {moduleData[state.lastLearningModule].title}
+          </h3>
+          <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "0.75rem" }}>
+            Card {state.currentCard + 1} of {moduleData[state.lastLearningModule].cards.length} — resume your latest unfinished module.
+          </p>
+          <button className="btn btn-black" onClick={() => openModule(state.lastLearningModule!)}>Resume</button>
         </div>
       )}
 
-      {/* Pre-test nudge */}
-      {!pretestDone && (
-        <div className="alert-box alert-info" style={{ padding: "1rem", borderRadius: "0.75rem", marginBottom: "1.25rem" }}>
-          <span style={{ fontSize: "1.1rem" }}>💡</span>
-          <div>
-            <strong>Start with a quick self-check</strong>
-            <p style={{ margin: "0.25rem 0 0.5rem" }}>
-              A short 6-question assessment helps you understand your starting skills before learning.
-            </p>
-            <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-pre")}>
-              Start Self-Assessment
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Pre-test done */}
-      {pretestDone && state.pretestScore !== null && (
-        <div className="alert-box alert-success" style={{ marginBottom: "1.25rem" }}>
-          <span>✅</span>
-          <span>
-            <strong>Initial Self-Assessment complete</strong> — you scored {state.pretestScore}/6. Now work through the modules below.
-          </span>
-        </div>
-      )}
-
-      {/* Self-skills assessment modules */}
-      <div className="section-title">Self-Skills Assessment</div>
-      <div className="grid-2" style={{ marginBottom: "1.25rem" }}>
-        {selfSkillsAssessmentData.initial.items.map((item) => {
-          const icons = ["🔍", "⚖️", "🎯", "📷", "📋", "🗳️"];
-          const colors = ["#e0eeff", "#fff3e0", "#fce4ec", "#e8f5e9", "#f3e5f5", "#e0f2fe"];
-          const idx = selfSkillsAssessmentData.initial.items.indexOf(item);
-          const answered = state.selfAssessments.initial.answers[idx];
-          const correct = answered === item.correctIndex;
+      {/* Self-Skills Assessment */}
+      <h3 style={{ marginBottom: "0.75rem" }}>Self-Skills Assessment</h3>
+      <div className="skill-grid" style={{ marginBottom: "1.5rem" }}>
+        {selfSkillsAssessmentData.initial.items.map((item, idx) => {
+          const ans = state.selfAssessments.initial.answers[idx];
+          const correct = pretestDone && ans === item.correctIndex;
+          const wrong = pretestDone && ans !== item.correctIndex;
           return (
-            <div key={item.pairId} className="assess-module-card">
-              <div className="assess-icon" style={{ background: colors[idx] }}>
-                {icons[idx]}
+            <div className="skill-card" key={item.pairId}
+              style={{ background: correct ? "var(--completed)" : wrong ? "var(--danger)" : "#fff" }}>
+              <div style={{ fontSize: "0.72rem", textTransform: "uppercase", color: "#555", marginBottom: "4px" }}>
+                {item.skill}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#1a2e4a" }}>{item.skill}</div>
-                <div style={{ fontSize: "0.78rem", color: "#888" }}>{item.difficulty}</div>
-              </div>
+              <div style={{ fontWeight: "bold" }}>{item.difficulty}</div>
               {pretestDone && (
-                <span style={{
-                  padding: "3px 8px", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 700,
-                  background: correct ? "#d1fae5" : "#fee2e2",
-                  color: correct ? "#065f46" : "#991b1b"
-                }}>
-                  {correct ? "Correct" : "Review"}
-                </span>
+                <div style={{ fontSize: "0.78rem", marginTop: "4px", color: correct ? "#090" : "#900" }}>
+                  {correct ? "✓ Correct" : "✗ Review needed"}
+                </div>
               )}
             </div>
           );
@@ -234,46 +149,44 @@ function LearningPage({
       </div>
 
       {/* Misinfo This Week */}
-      <div className="misinfo-card">
-        <div>
-          <div className="tag">Misinfo This Week</div>
-          <h3>The "Pencil-Gate" Theory</h3>
-          <p>Claims about erasable AEC pencils are trending. Practice identifying the claim and spotting the tactic.</p>
+      <div className="card" style={{ background: "var(--highlight)", border: "2px solid #000" }}>
+        <span className="label label-black">Misinfo This Week</span>
+        <div className="grid-2" style={{ marginTop: "10px", alignItems: "center" }}>
+          <div>
+            <h3 style={{ margin: 0 }}>The "Pencil-Gate" Theory</h3>
+            <p style={{ marginTop: "0.4rem" }}>
+              <small>Claims about erasable AEC pencils are trending again. Practice identifying the claim, judging its status, and spotting the tactic.</small>
+            </p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <button className="btn btn-black" onClick={() => { setScenarioItem(misinfoThisWeekItem); setPage("scenario"); }}>
+              Quick Analysis
+            </button>
+          </div>
         </div>
-        <button className="btn btn-outline" style={{ whiteSpace: "nowrap", flexShrink: 0 }} onClick={openMisinfoWeek}>
-          Quick Analysis
-        </button>
       </div>
 
       {/* Modules */}
-      <div className="section-title">Mechanisms &amp; Tactics</div>
+      <h3 style={{ marginBottom: "0.75rem" }}>Mechanisms &amp; Tactics</h3>
       <div className="grid-3">
         {moduleData.map((mod, idx) => {
           const isDone = state.completedModules.includes(idx);
           const needsReview = state.moduleNeedsReview.includes(idx);
-          const col = moduleColors[idx];
           return (
             <div
               key={idx}
-              className={`module-card ${isDone ? "done" : ""} ${needsReview ? "review" : ""}`}
+              className={`module-card${isDone ? " done" : ""}${needsReview ? " review" : ""}`}
               onClick={() => openModule(idx)}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: "0.5rem",
-                  background: col.bg, display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "1.1rem", flexShrink: 0
-                }}>
-                  {col.icon}
-                </div>
-                <div className="module-tag">{mod.label}</div>
-                {isDone && <span className="module-status-tag status-done">Done</span>}
-                {needsReview && <span className="module-status-tag status-review">Review</span>}
+              <div style={{ marginBottom: "0.4rem" }}>
+                <span className="label">{mod.label}</span>
+                {isDone && <span className="complete-tag">Done</span>}
+                {needsReview && <span className="review-tag">Review</span>}
               </div>
-              <h3>{mod.title}</h3>
-              <p>{mod.desc}</p>
+              <h4 style={{ fontWeight: 900, marginBottom: "0.35rem" }}>{mod.title}</h4>
+              <p style={{ fontSize: "0.83rem", color: "#555" }}>{mod.desc}</p>
               {isDone && (
-                <div className="progress-bar" style={{ marginTop: "0.75rem" }}>
+                <div className="progress-track" style={{ marginTop: "0.75rem" }}>
                   <div className="progress-fill" style={{ width: "100%" }} />
                 </div>
               )}
@@ -285,15 +198,9 @@ function LearningPage({
   );
 }
 
-// ===================== LESSON (FLASHCARD) PAGE =====================
-function LessonPage({
-  state,
-  setState,
-  setPage,
-}: {
-  state: AppState;
-  setState: (s: AppState) => void;
-  setPage: (p: Page) => void;
+// ─── LESSON (FLASHCARD) PAGE ────────────────────────────────────────────────
+function LessonPage({ state, setState, setPage }: {
+  state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
 }) {
   const mod = moduleData[state.currentModule];
   const cardIdx = state.currentCard;
@@ -302,22 +209,12 @@ function LessonPage({
   const isLast = cardIdx === total - 1;
   const isDone = state.completedModules.includes(state.currentModule);
 
-  function next() {
-    if (cardIdx < total - 1) {
-      setState({ ...state, currentCard: cardIdx + 1 });
-    }
-  }
-
-  function prev() {
-    if (cardIdx > 0) {
-      setState({ ...state, currentCard: cardIdx - 1 });
-    }
-  }
+  function next() { if (cardIdx < total - 1) setState({ ...state, currentCard: cardIdx + 1 }); }
+  function prev() { if (cardIdx > 0) setState({ ...state, currentCard: cardIdx - 1 }); }
 
   function markComplete() {
     const newDone = state.completedModules.includes(state.currentModule)
-      ? state.completedModules
-      : [...state.completedModules, state.currentModule];
+      ? state.completedModules : [...state.completedModules, state.currentModule];
     const allDone = newDone.length === moduleData.length;
     setState({ ...state, completedModules: newDone, posttestUnlocked: allDone });
     setPage("learning");
@@ -325,87 +222,58 @@ function LessonPage({
 
   function markReview() {
     const newReview = state.moduleNeedsReview.includes(state.currentModule)
-      ? state.moduleNeedsReview
-      : [...state.moduleNeedsReview, state.currentModule];
+      ? state.moduleNeedsReview : [...state.moduleNeedsReview, state.currentModule];
     setState({ ...state, moduleNeedsReview: newReview });
     setPage("learning");
   }
 
   return (
-    <div className="page-wrap">
-      <button className="back-btn" onClick={() => setPage("learning")}>
-        ← Back to Learning Hub
-      </button>
+    <div className="container">
+      <button className="btn" onClick={() => setPage("learning")}>← Back to Hub</button>
 
-      <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-        <div className="module-tag" style={{ fontSize: "0.75rem" }}>{mod.label}</div>
-        <h2 style={{ fontWeight: 800, fontSize: "1.4rem", color: "#1a2e4a", marginTop: "0.4rem" }}>
-          {mod.title}
-        </h2>
-        <p style={{ color: "#666", fontSize: "0.88rem" }}>{mod.desc}</p>
+      <div style={{ textAlign: "center", marginTop: "1rem" }}>
+        <span className="label">{mod.label}</span>
+        <h2 style={{ fontWeight: 900, fontSize: "1.3rem", margin: "0.5rem 0 0.25rem" }}>{mod.title}</h2>
+        <p style={{ fontSize: "0.88rem", color: "#555" }}>{mod.desc}</p>
       </div>
 
-      {/* Progress dots */}
-      <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginBottom: "1.5rem" }}>
+      {/* Dot progress */}
+      <div className="fc-dots">
         {mod.cards.map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: i === cardIdx ? 24 : 8,
-              height: 8,
-              borderRadius: 999,
-              background: i < cardIdx ? "#1e6fc0" : i === cardIdx ? "#1e6fc0" : "#dde",
-              transition: "all 0.3s",
-              opacity: i < cardIdx ? 0.5 : 1,
-            }}
-          />
+          <div key={i} className={`fc-dot ${i === cardIdx ? "active" : i < cardIdx ? "done-dot" : ""}`} />
         ))}
       </div>
 
       {/* Flashcard */}
       <div className="flashcard">
         <h2>{card.t}</h2>
-        <p>{card.p}</p>
-        <div className="au-box">
-          <strong>🇦🇺 AU Example: </strong>{card.au}
-        </div>
-        <div className="reflect-box">
-          <strong>Key check: </strong>{card.reflect}
-        </div>
+        <p style={{ marginBottom: "0" }}>{card.p}</p>
+        <div className="soft-box"><strong>🇦🇺 AU Example:</strong> {card.au}</div>
+        <div className="soft-box-grey"><strong>Key check:</strong> {card.reflect}</div>
       </div>
 
-      <p className="card-counter">
-        Card {cardIdx + 1} of {total}
+      <p style={{ textAlign: "center", marginTop: "0.75rem", fontSize: "0.88rem" }}>
+        Card <strong>{cardIdx + 1}</strong> / <strong>{total}</strong>
       </p>
 
-      <div className="flashcard-nav">
-        <button className="btn btn-outline" onClick={prev} disabled={cardIdx === 0}>
-          ← Previous
-        </button>
+      <div className="fc-nav">
+        <button className="btn" onClick={prev} disabled={cardIdx === 0}>Previous</button>
         {!isLast ? (
-          <button className="btn btn-primary" onClick={next}>
-            Next →
-          </button>
+          <button className="btn btn-black" onClick={next}>Next</button>
         ) : (
-          <button className="btn btn-primary" onClick={markComplete} style={{ background: "#16a34a" }}>
-            Complete Module ✓
-          </button>
+          <button className="btn btn-black" onClick={markComplete}>Complete Module ✓</button>
         )}
       </div>
 
       {isLast && !isDone && (
-        <div className="complete-box" style={{ marginTop: "1.5rem" }}>
-          <strong>You've reached the end of this module!</strong>
-          <p style={{ fontSize: "0.87rem", color: "#444", margin: "0.5rem 0" }}>
-            Mark it as done or flag for review.
+        <div className="module-complete-box" style={{ display: "block" }}>
+          <strong>You've reached the end of this module.</strong>
+          <p style={{ fontSize: "0.88rem", marginTop: "0.5rem" }}>
+            Mark it as done to track progress, or flag for review to revisit later.
           </p>
-          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
-            <button className="btn btn-outline btn-sm" onClick={markReview}>
-              Flag for Review
-            </button>
-            <button className="btn btn-primary btn-sm" onClick={markComplete} style={{ background: "#16a34a" }}>
-              Mark Done &amp; Continue
-            </button>
+          <div style={{ display: "flex", gap: "10px", marginTop: "0.75rem" }}>
+            <button className="btn" onClick={markReview}>Flag for Review</button>
+            <button className="btn btn-black" onClick={markComplete}>Mark Done &amp; Continue</button>
           </div>
         </div>
       )}
@@ -413,71 +281,56 @@ function LessonPage({
   );
 }
 
-// ===================== PRACTICE HUB =====================
+// ─── PRACTICE HUB ──────────────────────────────────────────────────────────
 function PracticePage({
-  state,
-  setState,
-  setPage,
-  setScenarioItem,
+  state, setState, setPage, setScenarioItem,
 }: {
-  state: AppState;
-  setState: (s: AppState) => void;
-  setPage: (p: Page) => void;
+  state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
   setScenarioItem: (item: PracticeItem) => void;
 }) {
   const [tab, setTab] = useState<"bank" | "done">("bank");
   const pretestDone = state.selfAssessments.initial.completed;
-
   const banked = practiceItems.filter((p) => !state.completedPractices.includes(p.id));
   const done = practiceItems.filter((p) => state.completedPractices.includes(p.id));
 
-  function openScenario(item: PracticeItem) {
-    setScenarioItem(item);
-    setPage("scenario");
-  }
-
   return (
-    <div className="page-wrap">
-      <h1 style={{ fontWeight: 800, fontSize: "1.6rem", color: "#1a2e4a", marginBottom: "1rem" }}>
-        Practice Hub
-      </h1>
+    <div className="container">
+      <h1 style={{ fontSize: "1.5rem", fontWeight: 900, marginBottom: "1rem" }}>Practice Hub</h1>
 
       {!pretestDone && (
-        <div className="alert-box alert-info" style={{ marginBottom: "1.25rem" }}>
-          <span>💡</span>
-          <div>
-            <strong>Complete the self-assessment first</strong> to measure your improvement.{" "}
-            <button className="btn btn-primary btn-sm" style={{ marginTop: "0.35rem" }} onClick={() => setPage("assessment-pre")}>
-              Start Assessment
-            </button>
-          </div>
+        <div className="recommend-box">
+          <strong>💡 Tip:</strong> You have not completed the initial self-skills assessment yet. This short card-based check helps you understand your current skills before learning.
+          <button className="btn" style={{ marginLeft: "10px" }} onClick={() => setPage("assessment-pre")}>
+            Start Self-Assessment
+          </button>
         </div>
       )}
 
       <div className="tab-switch">
-        <button className={`tab-btn ${tab === "bank" ? "active" : ""}`} onClick={() => setTab("bank")}>
-          Question Bank ({banked.length})
+        <button className={`btn ${tab === "bank" ? "active" : ""}`} onClick={() => setTab("bank")}>
+          Question Bank <span className="count-chip">{banked.length}</span>
         </button>
-        <button className={`tab-btn ${tab === "done" ? "active" : ""}`} onClick={() => setTab("done")}>
-          Practiced ({done.length})
+        <button className={`btn ${tab === "done" ? "active" : ""}`} onClick={() => setTab("done")}>
+          Practiced <span className="count-chip">{done.length}</span>
         </button>
       </div>
 
       {tab === "bank" && (
         banked.length === 0 ? (
           <div className="empty-state">
-            <div style={{ fontSize: "2.5rem" }}>🎉</div>
-            <p><strong>All scenarios completed!</strong></p>
-            <p>Switch to the Practiced tab to review your work.</p>
+            <strong>🎉 All scenarios completed!</strong>
+            <p style={{ marginTop: "0.5rem" }}>Switch to the Practiced tab to review your work.</p>
           </div>
         ) : (
-          <div className="practice-grid">
+          <div className="practice-card-grid">
             {banked.map((item) => (
-              <div key={item.id} className="practice-card" onClick={() => openScenario(item)}>
-                <div className="source-chip">{item.sourceLabel}</div>
-                <div className="practice-label">{item.label}</div>
-                <h4>{item.title}</h4>
-                <p>{item.subtitle.split("|")[0]}</p>
+              <div key={item.id} className="pcard" onClick={() => setScenarioItem(item)}>
+                <div className="practice-meta">
+                  <span className="practice-chip">{item.sourceLabel}</span>
+                  <span className="practice-chip">{item.label}</span>
+                </div>
+                <h4 style={{ fontWeight: 900, marginBottom: "0.3rem", fontSize: "0.9rem" }}>{item.title}</h4>
+                <p style={{ fontSize: "0.78rem", color: "#555" }}>{item.subtitle.split("|")[0].trim()}</p>
               </div>
             ))}
           </div>
@@ -487,29 +340,28 @@ function PracticePage({
       {tab === "done" && (
         done.length === 0 ? (
           <div className="empty-state">
-            <div style={{ fontSize: "2.5rem" }}>📚</div>
-            <p><strong>No scenarios practiced yet.</strong></p>
-            <p>Head to the Question Bank to get started.</p>
+            <strong>📚 No scenarios practiced yet.</strong>
+            <p style={{ marginTop: "0.5rem" }}>Head to the Question Bank to get started.</p>
           </div>
         ) : (
-          <div className="practice-grid">
+          <div className="practice-card-grid">
             {done.map((item) => {
               const res = state.practiceResults[item.id];
               const bothRight = res?.q1 && res?.q2;
               return (
-                <div key={item.id} className={`practice-card done-card`} onClick={() => openScenario(item)}>
-                  <div className="source-chip">{item.sourceLabel}</div>
-                  <div className="practice-label">{item.label}</div>
-                  <h4>{item.title}</h4>
-                  <div style={{ marginTop: "0.5rem" }}>
-                    <span style={{
-                      padding: "3px 8px", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 700,
-                      background: bothRight ? "#d1fae5" : "#fee2e2",
-                      color: bothRight ? "#065f46" : "#991b1b"
+                <div key={item.id} className="pcard done-card" onClick={() => setScenarioItem(item)}>
+                  <div className="practice-meta">
+                    <span className="practice-chip">{item.sourceLabel}</span>
+                    <span className="practice-chip">{item.label}</span>
+                    <span className="practice-chip" style={{
+                      background: bothRight ? "var(--completed)" : "var(--danger)",
+                      borderColor: bothRight ? "#090" : "#900",
+                      color: bothRight ? "#090" : "#900"
                     }}>
-                      {bothRight ? "✓ Both correct" : "Needs review"}
+                      {bothRight ? "✓ Both correct" : "Review"}
                     </span>
                   </div>
+                  <h4 style={{ fontWeight: 900, marginBottom: "0.3rem", fontSize: "0.9rem" }}>{item.title}</h4>
                 </div>
               );
             })}
@@ -520,125 +372,89 @@ function PracticePage({
   );
 }
 
-// ===================== SCENARIO PAGE =====================
+// ─── SCENARIO PAGE ─────────────────────────────────────────────────────────
 function ScenarioPage({
-  item,
-  state,
-  setState,
-  setPage,
-  fromMisinfo,
+  item, state, setState, setPage, fromMisinfo,
 }: {
-  item: PracticeItem;
-  state: AppState;
-  setState: (s: AppState) => void;
-  setPage: (p: Page) => void;
-  fromMisinfo?: boolean;
+  item: PracticeItem; state: AppState; setState: (s: AppState) => void;
+  setPage: (p: Page) => void; fromMisinfo?: boolean;
 }) {
   const [step, setStep] = useState(1);
   const [q1Ans, setQ1Ans] = useState<number | null>(null);
   const [q2Ans, setQ2Ans] = useState<string | null>(null);
-  const [submitted1, setSubmitted1] = useState(false);
-  const [submitted2, setSubmitted2] = useState(false);
+  const [confirmed1, setConfirmed1] = useState(false);
+  const [confirmed2, setConfirmed2] = useState(false);
 
-  function submitQ1() {
+  function confirmQ1() {
     if (q1Ans === null) return;
-    setSubmitted1(true);
-    setTimeout(() => setStep(2), 600);
+    setConfirmed1(true);
+    setTimeout(() => setStep(2), 500);
   }
 
-  function submitQ2() {
+  function confirmQ2() {
     if (!q2Ans) return;
-    setSubmitted2(true);
-    // Save results
+    setConfirmed2(true);
     if (item.id !== "misinfo-week") {
-      const q1Correct = q1Ans === item.q1Correct;
-      const q2Correct = q2Ans === item.q2Correct;
+      const q1C = q1Ans === item.q1Correct;
+      const q2C = q2Ans === item.q2Correct;
       const newCompleted = state.completedPractices.includes(item.id)
-        ? state.completedPractices
-        : [...state.completedPractices, item.id];
+        ? state.completedPractices : [...state.completedPractices, item.id];
       setState({
         ...state,
         completedPractices: newCompleted,
-        practiceResults: {
-          ...state.practiceResults,
-          [item.id]: { q1: q1Correct, q2: q2Correct },
-        },
+        practiceResults: { ...state.practiceResults, [item.id]: { q1: q1C, q2: q2C } },
       });
     }
     setStep(3);
   }
 
-  const q1Correct = q1Ans === item.q1Correct;
-  const q2Correct = q2Ans === item.q2Correct;
+  const q1C = q1Ans === item.q1Correct;
+  const q2C = q2Ans === item.q2Correct;
+  const back = fromMisinfo ? "learning" : "practice";
 
   return (
-    <div className="page-wrap">
-      <button className="back-btn" onClick={() => setPage(fromMisinfo ? "learning" : "practice")}>
-        ← {fromMisinfo ? "Back to Learning" : "Back to Practice"}
+    <div className="container">
+      <button className="btn" onClick={() => setPage(back)}>
+        ← Back to {fromMisinfo ? "Learning" : "Practice"}
       </button>
 
       {/* Step indicator */}
-      <div className="steps-wrap" style={{ maxWidth: 400 }}>
-        {[1, 2, 3].map((s) => (
-          <div key={s} style={{ display: "flex", alignItems: "center", gap: "0.4rem", flex: s < 3 ? 1 : undefined }}>
-            <div className={`step-dot ${step > s ? "done" : step === s ? "active" : "pending"}`}>
-              {step > s ? "✓" : s}
-            </div>
-            {s < 3 && <div className="step-line" />}
-          </div>
-        ))}
-        <span style={{ fontSize: "0.82rem", color: "#888", marginLeft: "0.5rem" }}>
-          {step === 1 ? "Identify Claim" : step === 2 ? "Judge Claim" : "Result"}
-        </span>
+      <div className="step-indicator" style={{ marginTop: "0.75rem" }}>
+        <span className={`step-dot${step === 1 ? " active" : step > 1 ? " done-step" : ""}`}>1. Identify Claim</span>
+        <span className={`step-dot${step === 2 ? " active" : step > 2 ? " done-step" : ""}`}>2. Judge Claim</span>
+        <span className={`step-dot${step === 3 ? " active" : ""}`}>3. Result</span>
       </div>
 
-      <div className="scenario-wrap">
+      <div className="grid-2" style={{ marginTop: "1rem" }}>
         {/* Left: Post */}
         <div className="card">
-          <div className="source-chip">{item.sourceLabel}</div>
-          <h3 style={{ fontWeight: 700, fontSize: "1rem", color: "#1a2e4a", margin: "0.5rem 0" }}>
-            {item.title}
-          </h3>
-          <p style={{ fontSize: "0.82rem", color: "#888", margin: "0 0 0.75rem" }}>{item.subtitle}</p>
-          <div className="post-bubble" dangerouslySetInnerHTML={{ __html: item.postText }} />
-          <div className="context-box">
-            <strong>Context:</strong> {item.contextText}
-          </div>
+          <span className="label">{item.sourceLabel}</span>
+          <h3 style={{ fontWeight: 900, margin: "0.5rem 0 0.25rem" }}>{item.title}</h3>
+          <p style={{ fontSize: "0.82rem", color: "#555", marginBottom: "0.5rem" }}><small>{item.subtitle}</small></p>
+          <div className="practice-post" dangerouslySetInnerHTML={{ __html: item.postText }} />
+          <div className="soft-box"><strong>Context:</strong> {item.contextText}</div>
         </div>
 
         {/* Right: Questions */}
         <div className="card">
           {step === 1 && (
             <>
-              <h3 style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.75rem" }}>
-                1. Identify the Claim
-              </h3>
-              <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "1rem" }}>
-                {item.q1}
-              </p>
+              <h3 style={{ marginBottom: "0.75rem" }}>1. Identify the Claim</h3>
+              <p style={{ fontSize: "0.88rem", marginBottom: "1rem" }}>{item.q1}</p>
               {item.q1Options.map((opt, i) => {
-                let cls = "option-btn";
-                if (submitted1) {
+                let cls = "btn option-btn";
+                if (confirmed1) {
                   if (i === item.q1Correct) cls += " correct";
                   else if (i === q1Ans) cls += " incorrect";
                 } else if (q1Ans === i) cls += " selected";
                 return (
-                  <button
-                    key={i}
-                    className={cls}
-                    onClick={() => !submitted1 && setQ1Ans(i)}
-                    disabled={submitted1}
-                  >
+                  <button key={i} className={cls} onClick={() => !confirmed1 && setQ1Ans(i)} disabled={confirmed1}>
                     {opt}
                   </button>
                 );
               })}
-              <button
-                className="btn btn-primary"
-                style={{ width: "100%", marginTop: "0.5rem" }}
-                onClick={submitQ1}
-                disabled={q1Ans === null}
-              >
+              <button className="btn btn-black" style={{ width: "100%", marginTop: "0.5rem" }}
+                onClick={confirmQ1} disabled={q1Ans === null}>
                 Confirm Answer
               </button>
             </>
@@ -646,38 +462,25 @@ function ScenarioPage({
 
           {step === 2 && (
             <>
-              <h3 style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.75rem" }}>
-                2. Judge the Claim
-              </h3>
-              <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "1rem" }}>
-                {item.q2Question}
-              </p>
-              <div className="grid-2">
+              <h3 style={{ marginBottom: "0.75rem" }}>2. Judge the Claim</h3>
+              <p style={{ fontSize: "0.88rem", marginBottom: "1rem" }}>{item.q2Question}</p>
+              <div className="grid-2" style={{ gap: "8px" }}>
                 {item.q2Options.map((opt) => {
-                  let cls = "option-btn";
-                  if (submitted2) {
+                  let cls = "btn option-btn";
+                  if (confirmed2) {
                     if (opt === item.q2Correct) cls += " correct";
                     else if (opt === q2Ans) cls += " incorrect";
                   } else if (q2Ans === opt) cls += " selected";
                   return (
-                    <button
-                      key={opt}
-                      className={cls}
-                      style={{ textAlign: "center" }}
-                      onClick={() => !submitted2 && setQ2Ans(opt)}
-                      disabled={submitted2}
-                    >
+                    <button key={opt} className={cls} style={{ textAlign: "center" }}
+                      onClick={() => !confirmed2 && setQ2Ans(opt)} disabled={confirmed2}>
                       {opt}
                     </button>
                   );
                 })}
               </div>
-              <button
-                className="btn btn-primary"
-                style={{ width: "100%", marginTop: "0.75rem" }}
-                onClick={submitQ2}
-                disabled={!q2Ans}
-              >
+              <button className="btn btn-black" style={{ width: "100%", marginTop: "0.75rem" }}
+                onClick={confirmQ2} disabled={!q2Ans}>
                 Submit Judgement
               </button>
             </>
@@ -685,27 +488,24 @@ function ScenarioPage({
 
           {step === 3 && (
             <>
-              <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                <span style={{ padding: "4px 10px", borderRadius: "999px", background: q1Correct ? "#d1fae5" : "#fee2e2", color: q1Correct ? "#065f46" : "#991b1b", fontSize: "0.8rem", fontWeight: 700 }}>
-                  Claim: {q1Correct ? "✓ Correct" : "✗ Incorrect"}
+              <div className="practice-meta">
+                <span className="practice-chip" style={{ borderColor: q1C ? "#090" : "#900", color: q1C ? "#090" : "#900" }}>
+                  Claim: {q1C ? "✓ Correct" : "✗ Incorrect"}
                 </span>
-                <span style={{ padding: "4px 10px", borderRadius: "999px", background: q2Correct ? "#d1fae5" : "#fee2e2", color: q2Correct ? "#065f46" : "#991b1b", fontSize: "0.8rem", fontWeight: 700 }}>
-                  Verdict: {q2Correct ? "✓ Correct" : "✗ Incorrect"}
+                <span className="practice-chip" style={{ borderColor: q2C ? "#090" : "#900", color: q2C ? "#090" : "#900" }}>
+                  Verdict: {q2C ? "✓ Correct" : "✗ Incorrect"}
                 </span>
               </div>
-              <div className="verdict-box">
-                <h4>Analysis Result</h4>
-                <div className="verdict-line"><strong>Correct Verdict:</strong> <VerdictChip v={item.q2Verdict} /></div>
-                <div className="verdict-line"><strong>Explanation:</strong> {item.explanation}</div>
-                <div className="verdict-line"><strong>Tactic / Mechanism:</strong> {item.tactic}</div>
-                <div className="verdict-line"><strong>Reference:</strong> {item.reference}</div>
+              <div className="verdict">
+                <h4 style={{ marginBottom: "0.75rem" }}>Analysis Result</h4>
+                <p className="practice-result-line"><strong>Correct Verdict:</strong> <span className="v-chip">{item.q2Verdict}</span></p>
+                <p className="practice-result-line"><strong>Analysis:</strong> {item.explanation}</p>
+                <p className="practice-result-line"><strong>Tactic / Mechanism:</strong> {item.tactic}</p>
+                <p className="practice-result-line"><strong>Reference:</strong> {item.reference}</p>
               </div>
-              <button
-                className="btn btn-primary"
-                style={{ width: "100%", marginTop: "1rem" }}
-                onClick={() => setPage(fromMisinfo ? "learning" : "practice")}
-              >
-                Back to {fromMisinfo ? "Learning" : "Practice Hub"}
+              <button className="btn btn-black" style={{ marginTop: "1rem", width: "100%" }}
+                onClick={() => setPage(back)}>
+                Continue to Next Content
               </button>
             </>
           )}
@@ -715,173 +515,129 @@ function ScenarioPage({
   );
 }
 
-// ===================== ME PAGE =====================
-function MePage({
-  state,
-  setPage,
-}: {
-  state: AppState;
-  setPage: (p: Page) => void;
-}) {
+// ─── ME PAGE ───────────────────────────────────────────────────────────────
+function MePage({ state, setPage }: { state: AppState; setPage: (p: Page) => void }) {
   const totalPracticed = state.completedPractices.length;
-  const correctPractices = Object.values(state.practiceResults).filter((r) => r.q1 && r.q2).length;
-  const avgScore = totalPracticed > 0 ? Math.round((correctPractices / totalPracticed) * 100) : 0;
+  const correctCount = Object.values(state.practiceResults).filter((r) => r.q1 && r.q2).length;
+  const avgScore = totalPracticed > 0 ? Math.round((correctCount / totalPracticed) * 100) : 0;
   const doneModules = state.completedModules.length;
-  const allModulesDone = doneModules === moduleData.length;
+  const allDone = doneModules === moduleData.length;
 
   const badges = [
-    { name: "Claim Spotter", icon: "🛡️", earned: totalPracticed >= 1, desc: "Completed first scenario" },
-    { name: "Fact Finder", icon: "🔍", earned: correctPractices >= 3, desc: "3 correct judgements" },
-    { name: "Logic Pro", icon: "🧠", earned: allModulesDone, desc: "All modules done" },
-    { name: "Module Master", icon: "⭐", earned: doneModules >= 3, desc: "3 modules complete" },
-    { name: "Scholar", icon: "🎓", earned: state.selfAssessments.initial.completed && state.selfAssessments.final.completed, desc: "Both assessments done" },
+    { name: "🛡️ Claim Spotter", earned: totalPracticed >= 1, desc: "First scenario done" },
+    { name: "🔍 Fact Finder", earned: correctCount >= 3, desc: "3 correct judgements" },
+    { name: "🧠 Logic Pro", earned: allDone, desc: "All modules done" },
+    { name: "⭐ Module Master", earned: doneModules >= 3, desc: "3 modules complete" },
+    { name: "🎓 Scholar", earned: state.selfAssessments.initial.completed && state.selfAssessments.final.completed, desc: "Both assessments done" },
   ];
 
-  const preScore = state.pretestScore;
-  const postScore = state.posttestScore;
-
-  function scoreClass(s: number | null) {
-    if (s === null) return "";
-    if (s >= 5) return "score-high";
-    if (s >= 3) return "score-mid";
-    return "score-low";
-  }
-
   return (
-    <div className="page-wrap">
-      <h1 style={{ fontWeight: 800, fontSize: "1.6rem", color: "#1a2e4a", marginBottom: "1.25rem" }}>
-        My Progress
-      </h1>
+    <div className="container">
+      <h1 style={{ fontSize: "1.5rem", fontWeight: 900, marginBottom: "1rem" }}>My Progress</h1>
 
       <div className="grid-2">
-        {/* Profile */}
+        {/* Profile & stats */}
         <div className="card">
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #1e6fc0, #1a3f70)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>
-              🧑‍🎓
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>Freya</div>
-              <div style={{ fontSize: "0.82rem", color: "#888" }}>Student Researcher</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
-              <span style={{ color: "#666" }}>Scenarios completed</span>
-              <strong>{totalPracticed}</strong>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
-              <span style={{ color: "#666" }}>Modules done</span>
-              <strong>{doneModules} / {moduleData.length}</strong>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem" }}>
-              <span style={{ color: "#666" }}>Accuracy rate</span>
-              <strong>{totalPracticed > 0 ? `${avgScore}%` : "—"}</strong>
-            </div>
+          <span className="label">Student Profile</span>
+          <h3 style={{ marginTop: "0.5rem", fontWeight: 900 }}>Freya</h3>
+          <p style={{ fontSize: "0.82rem", color: "#555", marginBottom: "1rem" }}>Student Researcher</p>
+          <div>
+            <div className="me-stat-row"><span>Scenarios completed</span><strong>{totalPracticed}</strong></div>
+            <div className="me-stat-row"><span>Modules done</span><strong>{doneModules} / {moduleData.length}</strong></div>
+            <div className="me-stat-row"><span>Accuracy rate</span><strong>{totalPracticed > 0 ? `${avgScore}%` : "—"}</strong></div>
+            <div className="me-stat-row"><span>Badges earned</span><strong>{badges.filter(b => b.earned).length} / {badges.length}</strong></div>
           </div>
         </div>
 
-        {/* Module Progress */}
+        {/* Module progress */}
         <div className="card">
-          <div style={{ fontWeight: 700, fontSize: "0.95rem", marginBottom: "1rem" }}>Module Progress</div>
-          {moduleData.map((mod, i) => {
-            const done = state.completedModules.includes(i);
-            const review = state.moduleNeedsReview.includes(i);
-            return (
-              <div key={i} className="mod-progress-row">
-                <div className="mod-progress-label">{mod.title}</div>
-                <div className="mod-progress-bar">
-                  <div className="mod-progress-fill" style={{ width: done ? "100%" : "0%", background: review ? "#ef4444" : "#1e6fc0" }} />
+          <span className="label">Module Progress</span>
+          <div style={{ marginTop: "0.75rem" }}>
+            {moduleData.map((mod, i) => {
+              const done = state.completedModules.includes(i);
+              const review = state.moduleNeedsReview.includes(i);
+              return (
+                <div key={i} style={{ marginBottom: "0.75rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.83rem", marginBottom: "3px" }}>
+                    <span>{mod.title}</span>
+                    <span style={{ color: done ? (review ? "#900" : "#090") : "#999" }}>
+                      {done ? (review ? "Review" : "100%") : "0%"}
+                    </span>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width: done ? "100%" : "0%", background: review ? "#900" : "#000" }} />
+                  </div>
                 </div>
-                <div className="mod-progress-pct">{done ? (review ? "Review" : "100%") : "0%"}</div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Skill Improvement */}
+      {/* Skill improvement */}
       <div className="card">
-        <div style={{ fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.5rem" }}>Skill Improvement</div>
-        <div className="skill-compare">
-          <div className="skill-val">
-            <p>INITIAL SELF-ASSESSMENT</p>
-            {preScore !== null ? (
-              <h2>
-                {preScore}/6 <span className={`score-pill ${scoreClass(preScore)}`} style={{ fontSize: "1rem" }}>
-                  {preScore >= 5 ? "Strong" : preScore >= 3 ? "Good" : "Developing"}
-                </span>
-              </h2>
+        <span className="label">Skill Improvement</span>
+        <div className="score-compare" style={{ marginTop: "0.75rem" }}>
+          <div className="score-box">
+            <div className="score-box-label">Initial Self-Assessment</div>
+            {state.pretestScore !== null ? (
+              <div className="score-big">{state.pretestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal" }}>/6</span></div>
             ) : (
-              <div className="locked-val">—</div>
+              <div className="locked-text">Not done</div>
             )}
           </div>
-          <div className="skill-divider" />
-          <div className="skill-val">
-            <p>FINAL SELF-ASSESSMENT</p>
-            {postScore !== null ? (
-              <h2>
-                {postScore}/6 <span className={`score-pill ${scoreClass(postScore)}`} style={{ fontSize: "1rem" }}>
-                  {postScore >= 5 ? "Strong" : postScore >= 3 ? "Good" : "Developing"}
-                </span>
-              </h2>
+          <div className="score-box">
+            <div className="score-box-label">Final Self-Assessment</div>
+            {state.posttestScore !== null ? (
+              <div className="score-big">{state.posttestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal" }}>/6</span></div>
             ) : (
-              <div className="locked-val">🔒 Locked</div>
+              <div className="locked-text">🔒 Locked</div>
             )}
           </div>
         </div>
-        {preScore !== null && postScore !== null && (
-          <p style={{ textAlign: "center", marginTop: "0.75rem", fontWeight: 700, color: postScore >= preScore ? "#16a34a" : "#dc2626" }}>
-            {postScore >= preScore ? `↑ Improvement: +${postScore - preScore} points` : `↓ Change: ${postScore - preScore} points`}
+        {state.pretestScore !== null && state.posttestScore !== null && (
+          <p style={{ textAlign: "center", marginTop: "0.75rem", fontWeight: 700 }}>
+            {state.posttestScore >= state.pretestScore
+              ? `↑ Improvement: +${state.posttestScore - state.pretestScore} points`
+              : `↓ Change: ${state.posttestScore - state.pretestScore} points`}
           </p>
         )}
       </div>
 
       {/* Badges */}
       <div className="card">
-        <div style={{ fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.75rem" }}>Awards &amp; Badges</div>
-        <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "0.75rem" }}>
+        <span className="label">Badges &amp; Awards</span>
+        <p style={{ fontSize: "0.85rem", color: "#555", marginTop: "0.5rem" }}>
           Earn badges by completing lessons, improving your skills, and maintaining strong accuracy.
         </p>
-        <div className="badge-grid">
+        <div className="badge-row">
           {badges.map((b) => (
-            <div key={b.name} className={`badge-item ${b.earned ? "earned" : ""}`} style={{ opacity: b.earned ? 1 : 0.4 }}>
-              <div className="badge-icon">{b.icon}</div>
-              <div className="badge-name">{b.name}</div>
-              <div style={{ fontSize: "0.7rem", color: "#888", marginTop: "0.15rem" }}>{b.desc}</div>
+            <div key={b.name} className={`badge-pill ${b.earned ? "earned" : "locked"}`}>
+              <div>{b.name}</div>
+              <div style={{ fontSize: "0.7rem", color: "#666", marginTop: "2px" }}>{b.desc}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Final Assessment Unlock */}
-      <div className="card" style={{ border: allModulesDone ? "1.5px solid #16a34a" : "1.5px dashed #ccc", background: allModulesDone ? "#f0fdf4" : "#f9f9f9", textAlign: "center" }}>
-        <h3 style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.5rem" }}>
-          Final Self-Skills Assessment
-        </h3>
-        {allModulesDone ? (
+      {/* Final assessment */}
+      <div className="card" style={{ border: allDone ? "2px dashed #000" : "1px dashed #aaa", background: allDone ? "var(--completed)" : "#fafafa" }}>
+        <span className="label">Final Self-Skills Assessment</span>
+        {allDone ? (
           <>
-            <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "0.75rem" }}>
-              All modules complete! Take the final assessment to measure your progress.
-            </p>
+            <p style={{ margin: "0.75rem 0" }}>All modules complete! Take the final assessment to measure your progress.</p>
             {state.selfAssessments.final.completed ? (
-              <span className="score-pill score-high">Final Assessment Done ✓</span>
+              <span className="complete-tag" style={{ fontSize: "0.9rem", padding: "4px 10px" }}>Final Assessment Done ✓</span>
             ) : (
-              <button className="btn btn-primary" onClick={() => setPage("assessment-post")}>
-                Start Final Assessment
-              </button>
+              <button className="btn btn-black" onClick={() => setPage("assessment-post")}>Start Final Assessment</button>
             )}
           </>
         ) : (
           <>
-            <p style={{ fontSize: "0.88rem", color: "#666", marginBottom: "0.75rem" }}>
-              🔒 Complete all {moduleData.length} learning modules to unlock the final assessment.
-              <br />
-              <span style={{ color: "#1e6fc0", fontWeight: 600 }}>{doneModules} / {moduleData.length} done</span>
+            <p style={{ margin: "0.75rem 0", color: "#666" }}>
+              🔒 Complete all {moduleData.length} learning modules to unlock. ({doneModules}/{moduleData.length} done)
             </p>
-            <button className="btn btn-outline" disabled>
-              Locked
-            </button>
+            <button className="btn" disabled>Locked</button>
           </>
         )}
       </div>
@@ -889,107 +645,77 @@ function MePage({
   );
 }
 
-// ===================== ASSESSMENT PAGE =====================
+// ─── ASSESSMENT PAGE ────────────────────────────────────────────────────────
 function AssessmentPage({
-  type,
-  state,
-  setState,
-  setPage,
+  type, state, setState, setPage,
 }: {
-  type: "pre" | "post";
-  state: AppState;
-  setState: (s: AppState) => void;
-  setPage: (p: Page) => void;
+  type: "pre" | "post"; state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
 }) {
   const data = type === "pre" ? selfSkillsAssessmentData.initial : selfSkillsAssessmentData.final;
   const assessKey = type === "pre" ? "initial" : "final";
   const assessState = state.selfAssessments[assessKey];
-  const [answers, setAnswers] = useState<(number | null)[]>(assessState.answers.length > 0 ? assessState.answers : new Array(data.items.length).fill(null));
+  const [answers, setAnswers] = useState<(number | null)[]>(
+    assessState.answers.length > 0 ? assessState.answers : new Array(data.items.length).fill(null)
+  );
   const [currentIdx, setCurrentIdx] = useState(assessState.currentIndex || 0);
-  const [submitted, setSubmitted] = useState(false);
+  const [done, setDone] = useState(assessState.completed);
 
   const item: AssessItem = data.items[currentIdx];
   const currentAns = answers[currentIdx];
+  const isLast = currentIdx === data.items.length - 1;
 
-  function selectAnswer(i: number) {
-    if (submitted) return;
-    const newAns = [...answers];
-    newAns[currentIdx] = i;
-    setAnswers(newAns);
+  function select(i: number) {
+    if (done) return;
+    const a = [...answers]; a[currentIdx] = i; setAnswers(a);
   }
 
   function next() {
-    if (currentIdx < data.items.length - 1) {
+    if (!isLast) {
       setCurrentIdx(currentIdx + 1);
+      setState({ ...state, selfAssessments: { ...state.selfAssessments, [assessKey]: { ...assessState, currentIndex: currentIdx + 1, answers } } });
+    } else {
+      const score = answers.filter((a, i) => a === data.items[i].correctIndex).length;
       setState({
         ...state,
-        selfAssessments: {
-          ...state.selfAssessments,
-          [assessKey]: { ...assessState, currentIndex: currentIdx + 1, answers },
-        },
-      });
-    } else {
-      // Complete
-      const score = answers.filter((a, i) => a === data.items[i].correctIndex).length;
-      const newState = {
-        ...state,
-        selfAssessments: {
-          ...state.selfAssessments,
-          [assessKey]: { currentIndex: 0, answers, completed: true },
-        },
+        selfAssessments: { ...state.selfAssessments, [assessKey]: { currentIndex: 0, answers, completed: true } },
         ...(type === "pre" ? { pretestScore: score, completedPretest: true } : { posttestScore: score }),
-      };
-      setState(newState);
-      setSubmitted(true);
+      });
+      setDone(true);
     }
   }
 
-  function prev() {
-    if (currentIdx > 0) setCurrentIdx(currentIdx - 1);
-  }
-
-  const isLast = currentIdx === data.items.length - 1;
-
-  if (submitted || assessState.completed) {
+  // Show results
+  if (done || assessState.completed) {
     const score = type === "pre" ? state.pretestScore : state.posttestScore;
-    const finalAnswers = assessState.completed ? assessState.answers : answers;
+    const finalAns = assessState.completed ? assessState.answers : answers;
     return (
-      <div className="page-wrap">
-        <div className="card assess-card" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>
-            {(score ?? 0) >= 5 ? "🎉" : (score ?? 0) >= 3 ? "👍" : "📚"}
-          </div>
-          <h2 style={{ fontWeight: 800, fontSize: "1.4rem", color: "#1a2e4a" }}>
-            Assessment Complete!
-          </h2>
-          <p style={{ color: "#666", marginBottom: "1rem" }}>You scored</p>
-          <div style={{ fontSize: "3rem", fontWeight: 800, color: "#1e6fc0", marginBottom: "0.5rem" }}>
-            {score}/6
-          </div>
-          <p style={{ fontSize: "0.88rem", color: "#888", marginBottom: "1.5rem" }}>
-            {(score ?? 0) >= 5 ? "Excellent! You have strong critical thinking skills." : (score ?? 0) >= 3 ? "Good start! The modules will sharpen your skills further." : "The modules will help you build these skills step by step."}
+      <div className="container assessment-shell">
+        <div className="card" style={{ textAlign: "center" }}>
+          <h2 style={{ fontWeight: 900, fontSize: "1.4rem", marginBottom: "0.5rem" }}>Assessment Complete!</h2>
+          <p>You scored</p>
+          <div className="score-big">{score}<span style={{ fontSize: "1.2rem", fontWeight: "normal" }}>/6</span></div>
+          <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "1.5rem" }}>
+            {(score ?? 0) >= 5 ? "Excellent — strong critical thinking skills." : (score ?? 0) >= 3 ? "Good start — the modules will sharpen your skills." : "The modules will help you build these skills step by step."}
           </p>
 
-          {/* Review answers */}
-          <div style={{ textAlign: "left", marginBottom: "1.5rem" }}>
-            {data.items.map((q, i) => {
-              const ans = finalAnswers[i];
-              const correct = ans === q.correctIndex;
-              return (
-                <div key={i} style={{ padding: "0.75rem", borderRadius: "0.5rem", marginBottom: "0.5rem", background: correct ? "#f0fdf4" : "#fef2f2", border: `1px solid ${correct ? "#86efac" : "#fca5a5"}` }}>
-                  <div style={{ fontSize: "0.8rem", fontWeight: 700, color: correct ? "#16a34a" : "#dc2626", marginBottom: "0.25rem" }}>
-                    {correct ? "✓ Correct" : "✗ Incorrect"} — {q.skill}
-                  </div>
-                  <div style={{ fontSize: "0.82rem", color: "#444" }}>
-                    <strong>Your answer:</strong> {ans !== null ? q.options[ans] : "No answer"}<br />
-                    {!correct && <span><strong>Correct:</strong> {q.options[q.correctIndex]}</span>}
-                  </div>
+          {/* Answer review */}
+          {data.items.map((q, i) => {
+            const ans = finalAns[i];
+            const correct = ans === q.correctIndex;
+            return (
+              <div key={i} style={{ textAlign: "left", border: `1px solid ${correct ? "#090" : "#900"}`, padding: "0.75rem", marginBottom: "0.5rem", background: correct ? "var(--completed)" : "var(--danger)" }}>
+                <div style={{ fontSize: "0.78rem", fontWeight: 700, color: correct ? "#090" : "#900", marginBottom: "4px" }}>
+                  {correct ? "✓ Correct" : "✗ Incorrect"} — {q.skill}
                 </div>
-              );
-            })}
-          </div>
+                <div style={{ fontSize: "0.82rem" }}>
+                  <strong>Your answer:</strong> {ans !== null ? q.options[ans] : "No answer"}<br />
+                  {!correct && <span><strong>Correct:</strong> {q.options[q.correctIndex]}</span>}
+                </div>
+              </div>
+            );
+          })}
 
-          <button className="btn btn-primary" onClick={() => setPage(type === "pre" ? "learning" : "me")}>
+          <button className="btn btn-black" style={{ marginTop: "0.75rem" }} onClick={() => setPage(type === "pre" ? "learning" : "me")}>
             {type === "pre" ? "Start Learning →" : "View My Progress →"}
           </button>
         </div>
@@ -998,67 +724,44 @@ function AssessmentPage({
   }
 
   return (
-    <div className="page-wrap">
-      <button className="back-btn" onClick={() => setPage(type === "pre" ? "learning" : "me")}>
-        ← Cancel Assessment
-      </button>
-
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <div style={{ marginBottom: "1.25rem" }}>
-          <div style={{ fontWeight: 700, fontSize: "0.8rem", textTransform: "uppercase", color: "#1e6fc0", letterSpacing: "0.05em", marginBottom: "0.35rem" }}>
-            {data.title}
-          </div>
-          <h2 style={{ fontWeight: 800, fontSize: "1.3rem", color: "#1a2e4a", marginBottom: "0.25rem" }}>
-            Question {currentIdx + 1} of {data.items.length}
-          </h2>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${((currentIdx) / data.items.length) * 100}%` }} />
-          </div>
+    <div className="container assessment-shell">
+      <button className="btn" onClick={() => setPage(type === "pre" ? "learning" : "me")}>← Cancel</button>
+      <div style={{ margin: "1rem 0 0.5rem" }}>
+        <span className="label">{data.title}</span>
+        <h2 style={{ fontWeight: 900, marginTop: "0.4rem" }}>Question {currentIdx + 1} of {data.items.length}</h2>
+        <div className="progress-track" style={{ marginTop: "0.5rem" }}>
+          <div className="progress-fill" style={{ width: `${(currentIdx / data.items.length) * 100}%` }} />
         </div>
+      </div>
 
-        <div className="card">
-          <div className="source-chip">{item.sourceLabel}</div>
-          <div style={{ fontWeight: 600, fontSize: "0.82rem", color: "#1e6fc0", marginBottom: "0.5rem" }}>
-            Skill tested: {item.skill}
-          </div>
-          <div className="assess-post" dangerouslySetInnerHTML={{ __html: item.postText }} />
-          <p style={{ fontWeight: 600, fontSize: "0.95rem", color: "#1a2e4a", margin: "0.75rem 0" }}>
-            {item.question}
-          </p>
-          {item.options.map((opt, i) => (
-            <button
-              key={i}
-              className={`option-btn ${currentAns === i ? "selected" : ""}`}
-              onClick={() => selectAnswer(i)}
-            >
-              {opt}
-            </button>
-          ))}
-
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
-            <button className="btn btn-outline" onClick={prev} disabled={currentIdx === 0}>
-              ← Back
-            </button>
-            <button
-              className="btn btn-primary"
-              style={{ flex: 1 }}
-              onClick={next}
-              disabled={currentAns === null}
-            >
-              {isLast ? "Submit Assessment" : "Next Question →"}
-            </button>
-          </div>
+      <div className="card">
+        <span className="label">{item.sourceLabel}</span>
+        <p style={{ fontSize: "0.75rem", color: "#555", margin: "4px 0 6px", textTransform: "uppercase" }}>Skill: {item.skill}</p>
+        <div className="assessment-post-card" dangerouslySetInnerHTML={{ __html: item.postText }} />
+        <p style={{ fontWeight: 700, margin: "1rem 0 0.75rem" }}>{item.question}</p>
+        {item.options.map((opt, i) => (
+          <button key={i}
+            className={`btn option-btn assessment-option${currentAns === i ? " selected" : ""}`}
+            onClick={() => select(i)}>
+            {opt}
+          </button>
+        ))}
+        <div className="assessment-toolbar">
+          <button className="btn" onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} disabled={currentIdx === 0}>← Back</button>
+          <button className="btn btn-black" onClick={next} disabled={currentAns === null}>
+            {isLast ? "Submit Assessment" : "Next →"}
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-// ===================== MAIN APP =====================
+// ─── MAIN APP ───────────────────────────────────────────────────────────────
 export default function App() {
   const [state, setStateRaw] = useState<AppState>(loadState);
-  const [page, setPage] = useState<Page>("learning");
-  const [scenarioItem, setScenarioItem] = useState<PracticeItem | null>(null);
+  const [page, setPageRaw] = useState<Page>("learning");
+  const [scenarioItem, setScenarioItemRaw] = useState<PracticeItem | null>(null);
   const [fromMisinfo, setFromMisinfo] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1068,58 +771,39 @@ export default function App() {
     saveTimer.current = setTimeout(() => saveState(s), 300);
   }
 
-  function handleSetPage(p: Page) {
-    setPage(p);
-    if (p !== "scenario") setFromMisinfo(false);
-  }
+  function setPage(p: Page) { setPageRaw(p); }
 
   function openScenario(item: PracticeItem, misinfo = false) {
-    setScenarioItem(item);
+    setScenarioItemRaw(item);
     setFromMisinfo(misinfo);
-    setPage("scenario");
+    setPageRaw("scenario");
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "hsl(220, 20%, 97%)" }}>
-      <Navbar page={page} setPage={handleSetPage} />
-
+    <>
+      <Navbar page={page} setPage={setPage} />
       {page === "learning" && (
-        <LearningPage
-          state={state}
-          setState={setState}
-          setPage={handleSetPage}
-          setScenarioItem={(item) => openScenario(item, true)}
-        />
+        <LearningPage state={state} setState={setState} setPage={setPage}
+          setScenarioItem={(item) => openScenario(item, true)} />
       )}
       {page === "lesson" && (
-        <LessonPage state={state} setState={setState} setPage={handleSetPage} />
+        <LessonPage state={state} setState={setState} setPage={setPage} />
       )}
       {page === "practice" && (
-        <PracticePage
-          state={state}
-          setState={setState}
-          setPage={handleSetPage}
-          setScenarioItem={(item) => openScenario(item, false)}
-        />
+        <PracticePage state={state} setState={setState} setPage={setPage}
+          setScenarioItem={(item) => openScenario(item, false)} />
       )}
       {page === "scenario" && scenarioItem && (
-        <ScenarioPage
-          item={scenarioItem}
-          state={state}
-          setState={setState}
-          setPage={handleSetPage}
-          fromMisinfo={fromMisinfo}
-        />
+        <ScenarioPage item={scenarioItem} state={state} setState={setState}
+          setPage={setPage} fromMisinfo={fromMisinfo} />
       )}
-      {page === "me" && (
-        <MePage state={state} setPage={handleSetPage} />
-      )}
+      {page === "me" && <MePage state={state} setPage={setPage} />}
       {page === "assessment-pre" && (
-        <AssessmentPage type="pre" state={state} setState={setState} setPage={handleSetPage} />
+        <AssessmentPage type="pre" state={state} setState={setState} setPage={setPage} />
       )}
       {page === "assessment-post" && (
-        <AssessmentPage type="post" state={state} setState={setState} setPage={handleSetPage} />
+        <AssessmentPage type="post" state={state} setState={setState} setPage={setPage} />
       )}
-    </div>
+    </>
   );
 }
