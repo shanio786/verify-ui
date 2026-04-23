@@ -4,6 +4,32 @@ import type { PracticeItem, AssessItem } from "./data";
 
 type Page = "learning" | "practice" | "me" | "lesson" | "scenario" | "assessment-pre" | "assessment-post";
 
+interface User { name: string; email: string; joinedAt: string; }
+
+function loadUser(): User | null {
+  try {
+    const raw = localStorage.getItem("verifyAuCurrentUser");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+function saveUser(u: User | null) {
+  try {
+    if (u) localStorage.setItem("verifyAuCurrentUser", JSON.stringify(u));
+    else localStorage.removeItem("verifyAuCurrentUser");
+  } catch {}
+}
+function loadRegistry(): Record<string, User> {
+  try {
+    const raw = localStorage.getItem("verifyAuUserRegistry");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return {};
+}
+function saveRegistry(r: Record<string, User>) {
+  try { localStorage.setItem("verifyAuUserRegistry", JSON.stringify(r)); } catch {}
+}
+
 interface AppState {
   completedModules: number[];
   moduleNeedsReview: number[];
@@ -74,10 +100,11 @@ function Navbar({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
 
 // ─── LEARNING HUB ──────────────────────────────────────────────────────────
 function LearningPage({
-  state, setState, setPage, setScenarioItem,
+  state, setState, setPage, setScenarioItem, userName,
 }: {
   state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
   setScenarioItem: (item: PracticeItem) => void;
+  userName: string;
 }) {
   const pretestDone = state.selfAssessments.initial.completed;
   const doneModules = state.completedModules.length;
@@ -94,7 +121,7 @@ function LearningPage({
       {/* Hero */}
       <div className="hero">
         <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.65, marginBottom: "0.3rem" }}>VERIFY-AU</div>
-        <h1>Hi, Freya 👋</h1>
+        <h1>Hi, {userName.split(" ")[0]} 👋</h1>
         <p>Equip yourself with the tools to navigate Australian election information.</p>
         {pretestDone && (
           <div style={{ marginTop: "1rem", display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
@@ -550,7 +577,7 @@ function ScenarioPage({
 }
 
 // ─── ME PAGE ───────────────────────────────────────────────────────────────
-function MePage({ state, setPage }: { state: AppState; setPage: (p: Page) => void }) {
+function MePage({ state, setPage, user, onLogout }: { state: AppState; setPage: (p: Page) => void; user: User; onLogout: () => void }) {
   const totalPracticed = state.completedPractices.length;
   const correctCount = Object.values(state.practiceResults).filter((r) => r.q1 && r.q2).length;
   const avgScore = totalPracticed > 0 ? Math.round((correctCount / totalPracticed) * 100) : 0;
@@ -573,10 +600,18 @@ function MePage({ state, setPage }: { state: AppState; setPage: (p: Page) => voi
         <div className="card">
           <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1rem" }}>
             <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem" }}>🧑‍🎓</div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: "1.05rem" }}>Freya</div>
-              <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Student Researcher</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: "1.05rem" }}>{user.name}</div>
+              <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
             </div>
+            <button
+              onClick={onLogout}
+              style={{ background: "transparent", border: "1.5px solid var(--border)", color: "var(--text-muted)", padding: "0.35rem 0.7rem", borderRadius: 8, fontSize: "0.78rem", fontWeight: 700, cursor: "pointer" }}
+              title="Log out"
+            >Log out</button>
+          </div>
+          <div style={{ fontSize: "0.74rem", color: "var(--text-muted)", marginBottom: "0.85rem" }}>
+            Member since {new Date(user.joinedAt).toLocaleDateString("en-AU", { month: "short", year: "numeric" })}
           </div>
           <div className="stat-row"><span>Scenarios completed</span><strong>{totalPracticed}</strong></div>
           <div className="stat-row"><span>Modules done</span><strong>{doneModules} / {moduleData.length}</strong></div>
@@ -779,8 +814,158 @@ function AssessmentPage({
   );
 }
 
+// ─── LOGIN / SIGNUP PAGE ────────────────────────────────────────────────────
+function LoginPage({ onAuth }: { onAuth: (u: User) => void }) {
+  const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+
+  function isValidEmail(e: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!isValidEmail(cleanEmail)) { setError("Please enter a valid email address."); return; }
+    const registry = loadRegistry();
+
+    if (mode === "signup") {
+      const cleanName = name.trim();
+      if (cleanName.length < 2) { setError("Please enter your name (at least 2 characters)."); return; }
+      if (registry[cleanEmail]) {
+        setError("This email is already registered. Switch to Login instead.");
+        return;
+      }
+      const user: User = { name: cleanName, email: cleanEmail, joinedAt: new Date().toISOString() };
+      registry[cleanEmail] = user;
+      saveRegistry(registry);
+      saveUser(user);
+      onAuth(user);
+    } else {
+      const user = registry[cleanEmail];
+      if (!user) {
+        setError("No account found for this email. Sign up first.");
+        return;
+      }
+      saveUser(user);
+      onAuth(user);
+    }
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+      <div className="card" style={{ width: "100%", maxWidth: 420, padding: "2rem 1.75rem" }}>
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <div style={{ fontWeight: 800, fontSize: "1.6rem", color: "var(--primary)" }}>VERIFY<span style={{ color: "var(--accent)" }}>-AU</span></div>
+          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.4rem" }}>
+            Australian election information literacy
+          </p>
+        </div>
+
+        <div style={{ display: "flex", background: "#f3f4f6", borderRadius: 10, padding: 4, marginBottom: "1.25rem" }}>
+          <button
+            type="button"
+            onClick={() => { setMode("signup"); setError(""); }}
+            style={{
+              flex: 1, padding: "0.55rem", borderRadius: 8, border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: "0.88rem",
+              background: mode === "signup" ? "white" : "transparent",
+              color: mode === "signup" ? "var(--primary)" : "var(--text-muted)",
+              boxShadow: mode === "signup" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}
+          >Sign Up</button>
+          <button
+            type="button"
+            onClick={() => { setMode("login"); setError(""); }}
+            style={{
+              flex: 1, padding: "0.55rem", borderRadius: 8, border: "none", cursor: "pointer",
+              fontWeight: 700, fontSize: "0.88rem",
+              background: mode === "login" ? "white" : "transparent",
+              color: mode === "login" ? "var(--primary)" : "var(--text-muted)",
+              boxShadow: mode === "login" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+            }}
+          >Log In</button>
+        </div>
+
+        <h2 style={{ fontWeight: 800, fontSize: "1.2rem", marginBottom: "0.3rem" }}>
+          {mode === "signup" ? "Create your account" : "Welcome back"}
+        </h2>
+        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1.1rem" }}>
+          {mode === "signup"
+            ? "Just your name and email — no password needed."
+            : "Enter your email to continue where you left off."}
+        </p>
+
+        <form onSubmit={submit}>
+          {mode === "signup" && (
+            <div style={{ marginBottom: "0.85rem" }}>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.3rem" }}>
+                Full name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Freya Sharma"
+                autoFocus
+                style={{
+                  width: "100%", padding: "0.65rem 0.8rem", borderRadius: 8,
+                  border: "1.5px solid var(--border)", fontSize: "0.95rem", boxSizing: "border-box",
+                }}
+              />
+            </div>
+          )}
+          <div style={{ marginBottom: "0.85rem" }}>
+            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.3rem" }}>
+              Email address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoFocus={mode === "login"}
+              style={{
+                width: "100%", padding: "0.65rem 0.8rem", borderRadius: 8,
+                border: "1.5px solid var(--border)", fontSize: "0.95rem", boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          {error && (
+            <div style={{ background: "#fef2f2", color: "#991b1b", padding: "0.55rem 0.7rem", borderRadius: 8, fontSize: "0.82rem", marginBottom: "0.85rem", border: "1px solid #fecaca" }}>
+              {error}
+            </div>
+          )}
+
+          <button type="submit" className="btn btn-primary" style={{ width: "100%", padding: "0.7rem", fontSize: "0.95rem" }}>
+            {mode === "signup" ? "Create account & Start →" : "Log in →"}
+          </button>
+        </form>
+
+        <p style={{ textAlign: "center", fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "1.1rem" }}>
+          {mode === "signup"
+            ? "Already have an account? "
+            : "New here? "}
+          <button
+            type="button"
+            onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setError(""); }}
+            style={{ background: "none", border: "none", color: "var(--primary)", fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}
+          >
+            {mode === "signup" ? "Log in" : "Sign up"}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ───────────────────────────────────────────────────────────────
 export default function App() {
+  const [user, setUser] = useState<User | null>(loadUser);
   const [state, setStateRaw] = useState<AppState>(loadState);
   const [page, setPage] = useState<Page>("learning");
   const [scenarioItem, setScenarioItem] = useState<PracticeItem | null>(null);
@@ -799,14 +984,24 @@ export default function App() {
     setPage("scenario");
   }
 
+  function logout() {
+    saveUser(null);
+    setUser(null);
+    setPage("learning");
+  }
+
+  if (!user) {
+    return <LoginPage onAuth={(u) => setUser(u)} />;
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <Navbar page={page} setPage={setPage} />
-      {page === "learning" && <LearningPage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, true)} />}
+      {page === "learning" && <LearningPage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, true)} userName={user.name} />}
       {page === "lesson" && <LessonPage state={state} setState={setState} setPage={setPage} />}
       {page === "practice" && <PracticePage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, false)} />}
       {page === "scenario" && scenarioItem && <ScenarioPage item={scenarioItem} state={state} setState={setState} setPage={setPage} fromMisinfo={fromMisinfo} />}
-      {page === "me" && <MePage state={state} setPage={setPage} />}
+      {page === "me" && <MePage state={state} setPage={setPage} user={user} onLogout={logout} />}
       {page === "assessment-pre" && <AssessmentPage type="pre" state={state} setState={setState} setPage={setPage} />}
       {page === "assessment-post" && <AssessmentPage type="post" state={state} setState={setState} setPage={setPage} />}
     </div>
