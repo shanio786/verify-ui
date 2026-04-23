@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { moduleData, practiceItems, selfSkillsAssessmentData, misinfoThisWeekItem } from "./data";
 import type { PracticeItem, AssessItem } from "./data";
 
@@ -52,18 +52,21 @@ function saveState(s: AppState) {
   try { localStorage.setItem("verifyAuState_v3", JSON.stringify(s)); } catch {}
 }
 
+const moduleIcons = ["🔍", "🎭", "😤", "🍒", "📊"];
+const moduleColors = ["#e0eeff", "#fff3e0", "#fce4ec", "#e8f5e9", "#f3e5f5"];
+
 // ─── NAVBAR ────────────────────────────────────────────────────────────────
 function Navbar({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
-  const isL = page === "learning" || page === "lesson" || page === "assessment-pre" || page === "assessment-post";
-  const isP = page === "practice" || page === "scenario";
+  const isL = ["learning", "lesson", "assessment-pre", "assessment-post"].includes(page);
+  const isP = ["practice", "scenario"].includes(page);
   const isM = page === "me";
   return (
-    <nav>
-      <div className="logo">VERIFY-AU</div>
+    <nav className="nav">
+      <div className="nav-logo">VERIFY<span>-AU</span></div>
       <div className="nav-links">
-        <button className={isL ? "active" : ""} onClick={() => setPage("learning")}>Learning</button>
-        <button className={isP ? "active" : ""} onClick={() => setPage("practice")}>Practice</button>
-        <button className={isM ? "active" : ""} onClick={() => setPage("me")}>Me</button>
+        <button className={`nav-btn ${isL ? "active" : ""}`} onClick={() => setPage("learning")}>Learning</button>
+        <button className={`nav-btn ${isP ? "active" : ""}`} onClick={() => setPage("practice")}>Practice</button>
+        <button className={`nav-btn ${isM ? "active" : ""}`} onClick={() => setPage("me")}>Me</button>
       </div>
     </nav>
   );
@@ -78,6 +81,7 @@ function LearningPage({
 }) {
   const pretestDone = state.selfAssessments.initial.completed;
   const doneModules = state.completedModules.length;
+  const totalPracticed = state.completedPractices.length;
 
   function openModule(idx: number) {
     setState({ ...state, currentModule: idx, currentCard: 0, lastLearningModule: idx });
@@ -85,63 +89,89 @@ function LearningPage({
   }
 
   return (
-    <div className="container">
-      {/* Header card */}
-      <div className="card">
-        <h1 style={{ fontSize: "1.6rem", fontWeight: 900, marginBottom: "0.5rem" }}>Hi, Freya</h1>
+    <div className="page-wrap">
+      {/* Hero */}
+      <div className="hero">
+        <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.65, marginBottom: "0.3rem" }}>VERIFY-AU</div>
+        <h1>Hi, Freya 👋</h1>
         <p>Equip yourself with the tools to navigate Australian election information.</p>
-
-        {/* Pre-test nudge */}
-        {!pretestDone && (
-          <div className="recommend-box" style={{ marginTop: "1rem", marginBottom: 0 }}>
-            <strong>💡 Tip:</strong> You have not completed the initial self-skills assessment yet. This short card-based check helps you understand your current skills before learning.
-            <button className="btn" style={{ marginLeft: "10px" }} onClick={() => setPage("assessment-pre")}>
-              Start Self-Assessment
-            </button>
-          </div>
-        )}
-
-        {/* Pre-test done */}
-        {pretestDone && state.pretestScore !== null && (
-          <div className="summary-box" style={{ marginTop: "1rem", marginBottom: 0 }}>
-            <strong>Assessment complete.</strong> You scored {state.pretestScore}/6 on the initial self-skills assessment.{" "}
-            {doneModules}/{moduleData.length} modules done.
+        {pretestDone && (
+          <div style={{ marginTop: "1rem", display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            <span style={{ background: "rgba(255,255,255,0.18)", padding: "3px 11px", borderRadius: "999px", fontSize: "0.8rem" }}>
+              {doneModules}/{moduleData.length} modules done
+            </span>
+            <span style={{ background: "rgba(255,255,255,0.18)", padding: "3px 11px", borderRadius: "999px", fontSize: "0.8rem" }}>
+              {totalPracticed} scenarios practiced
+            </span>
           </div>
         )}
       </div>
 
-      {/* Current Activity */}
+      {/* Current Activity resume */}
       {state.lastLearningModule !== null && !state.completedModules.includes(state.lastLearningModule) && (
-        <div className="card">
-          <span className="label">Current Activity</span>
-          <h3 style={{ marginTop: "0.4rem", marginBottom: "0.25rem" }}>
-            {moduleData[state.lastLearningModule].title}
-          </h3>
-          <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "0.75rem" }}>
-            Card {state.currentCard + 1} of {moduleData[state.lastLearningModule].cards.length} — resume your latest unfinished module.
-          </p>
-          <button className="btn btn-black" onClick={() => openModule(state.lastLearningModule!)}>Resume</button>
+        <div className="current-card">
+          <div>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--primary)", marginBottom: "0.2rem" }}>
+              Continue where you left off
+            </div>
+            <div style={{ fontWeight: 700 }}>{moduleData[state.lastLearningModule].title}</div>
+            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "2px" }}>
+              Card {state.currentCard + 1} of {moduleData[state.lastLearningModule].cards.length}
+            </div>
+          </div>
+          <button className="btn btn-primary" onClick={() => openModule(state.lastLearningModule!)}>Resume →</button>
         </div>
       )}
 
-      {/* Self-Skills Assessment */}
-      <h3 style={{ marginBottom: "0.75rem" }}>Self-Skills Assessment</h3>
-      <div className="skill-grid" style={{ marginBottom: "1.5rem" }}>
+      {/* Pre-test nudge */}
+      {!pretestDone && (
+        <div className="alert alert-yellow">
+          <span style={{ fontSize: "1.1rem" }}>💡</span>
+          <div>
+            <strong>Start with a quick self-check</strong>
+            <p style={{ margin: "0.2rem 0 0.5rem", fontSize: "0.87rem" }}>
+              A 6-question assessment helps measure your starting skills before learning.
+            </p>
+            <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-pre")}>
+              Start Self-Assessment
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pretestDone && state.pretestScore !== null && (
+        <div className="alert alert-green">
+          <span>✅</span>
+          <span>
+            <strong>Initial assessment complete</strong> — you scored {state.pretestScore}/6. Work through the modules below, then take the final assessment.
+          </span>
+        </div>
+      )}
+
+      {/* Self-Skills Assessment grid */}
+      <div className="sec-title">Self-Skills Assessment</div>
+      <div className="skill-grid">
         {selfSkillsAssessmentData.initial.items.map((item, idx) => {
           const ans = state.selfAssessments.initial.answers[idx];
           const correct = pretestDone && ans === item.correctIndex;
           const wrong = pretestDone && ans !== item.correctIndex;
+          const iconColors = ["#e0eeff", "#fff3e0", "#fce4ec", "#e8f5e9", "#f3e5f5", "#e0f2fe"];
+          const icons = ["🔍", "⚖️", "🎯", "📷", "📋", "🗳️"];
           return (
-            <div className="skill-card" key={item.pairId}
-              style={{ background: correct ? "var(--completed)" : wrong ? "var(--danger)" : "#fff" }}>
-              <div style={{ fontSize: "0.72rem", textTransform: "uppercase", color: "#555", marginBottom: "4px" }}>
-                {item.skill}
+            <div key={item.pairId} className="skill-card">
+              <div className="skill-icon" style={{ background: iconColors[idx] }}>{icons[idx]}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: "0.88rem" }}>{item.skill}</div>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{item.difficulty}</div>
               </div>
-              <div style={{ fontWeight: "bold" }}>{item.difficulty}</div>
               {pretestDone && (
-                <div style={{ fontSize: "0.78rem", marginTop: "4px", color: correct ? "#090" : "#900" }}>
-                  {correct ? "✓ Correct" : "✗ Review needed"}
-                </div>
+                <span style={{
+                  fontSize: "0.7rem", fontWeight: 700, padding: "2px 7px", borderRadius: "999px",
+                  background: correct ? "#dcfce7" : "#fee2e2",
+                  color: correct ? "#166534" : "#991b1b"
+                }}>
+                  {correct ? "✓" : "✗ Review"}
+                </span>
               )}
             </div>
           );
@@ -149,47 +179,52 @@ function LearningPage({
       </div>
 
       {/* Misinfo This Week */}
-      <div className="card" style={{ background: "var(--highlight)", border: "2px solid #000" }}>
-        <span className="label label-black">Misinfo This Week</span>
-        <div className="grid-2" style={{ marginTop: "10px", alignItems: "center" }}>
-          <div>
-            <h3 style={{ margin: 0 }}>The "Pencil-Gate" Theory</h3>
-            <p style={{ marginTop: "0.4rem" }}>
-              <small>Claims about erasable AEC pencils are trending again. Practice identifying the claim, judging its status, and spotting the tactic.</small>
-            </p>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <button className="btn btn-black" onClick={() => { setScenarioItem(misinfoThisWeekItem); setPage("scenario"); }}>
-              Quick Analysis
-            </button>
-          </div>
+      <div className="misinfo-card">
+        <div>
+          <div className="misinfo-tag">Misinfo This Week</div>
+          <h3>The "Pencil-Gate" Theory</h3>
+          <p>Claims about erasable AEC pencils are trending. Practice identifying the claim and spotting the tactic.</p>
         </div>
+        <button className="btn btn-outline" style={{ flexShrink: 0 }} onClick={() => { setScenarioItem(misinfoThisWeekItem); setPage("scenario"); }}>
+          Quick Analysis
+        </button>
       </div>
 
-      {/* Modules */}
-      <h3 style={{ marginBottom: "0.75rem" }}>Mechanisms &amp; Tactics</h3>
+      {/* Mechanisms & Tactics */}
+      <div className="sec-title">Mechanisms &amp; Tactics</div>
       <div className="grid-3">
         {moduleData.map((mod, idx) => {
           const isDone = state.completedModules.includes(idx);
           const needsReview = state.moduleNeedsReview.includes(idx);
           return (
-            <div
-              key={idx}
-              className={`module-card${isDone ? " done" : ""}${needsReview ? " review" : ""}`}
-              onClick={() => openModule(idx)}
-            >
-              <div style={{ marginBottom: "0.4rem" }}>
-                <span className="label">{mod.label}</span>
-                {isDone && <span className="complete-tag">Done</span>}
-                {needsReview && <span className="review-tag">Review</span>}
+            <div key={idx} className={`module-card${isDone ? " done" : ""}${needsReview ? " review" : ""}`}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.55rem" }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  background: moduleColors[idx],
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "1rem", flexShrink: 0
+                }}>
+                  {moduleIcons[idx]}
+                </div>
+                <span className="mod-chip">{mod.label}</span>
+                {isDone && <span className="mod-tag done">Done</span>}
+                {needsReview && <span className="mod-tag review">Review</span>}
               </div>
-              <h4 style={{ fontWeight: 900, marginBottom: "0.35rem" }}>{mod.title}</h4>
-              <p style={{ fontSize: "0.83rem", color: "#555" }}>{mod.desc}</p>
+              <h3>{mod.title}</h3>
+              <p style={{ marginBottom: "0.1rem" }}>{mod.desc}</p>
               {isDone && (
-                <div className="progress-track" style={{ marginTop: "0.75rem" }}>
-                  <div className="progress-fill" style={{ width: "100%" }} />
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: "100%", background: needsReview ? "var(--danger)" : "var(--success)" }} />
                 </div>
               )}
+              {/* Start Learn button */}
+              <button
+                className="start-btn"
+                onClick={(e) => { e.stopPropagation(); setState({ ...state, currentModule: idx, currentCard: 0, lastLearningModule: idx }); setPage("lesson"); }}
+              >
+                {isDone ? "↩ Review" : "▶ Start Learn"}
+              </button>
             </div>
           );
         })}
@@ -215,8 +250,7 @@ function LessonPage({ state, setState, setPage }: {
   function markComplete() {
     const newDone = state.completedModules.includes(state.currentModule)
       ? state.completedModules : [...state.completedModules, state.currentModule];
-    const allDone = newDone.length === moduleData.length;
-    setState({ ...state, completedModules: newDone, posttestUnlocked: allDone });
+    setState({ ...state, completedModules: newDone, posttestUnlocked: newDone.length === moduleData.length });
     setPage("learning");
   }
 
@@ -228,52 +262,52 @@ function LessonPage({ state, setState, setPage }: {
   }
 
   return (
-    <div className="container">
-      <button className="btn" onClick={() => setPage("learning")}>← Back to Hub</button>
+    <div className="page-wrap">
+      <button className="back-btn" onClick={() => setPage("learning")}>← Back to Learning Hub</button>
 
-      <div style={{ textAlign: "center", marginTop: "1rem" }}>
-        <span className="label">{mod.label}</span>
-        <h2 style={{ fontWeight: 900, fontSize: "1.3rem", margin: "0.5rem 0 0.25rem" }}>{mod.title}</h2>
-        <p style={{ fontSize: "0.88rem", color: "#555" }}>{mod.desc}</p>
+      <div style={{ textAlign: "center", marginBottom: "0.5rem" }}>
+        <span className="mod-chip">{mod.label}</span>
+        <h2 style={{ fontWeight: 800, fontSize: "1.35rem", marginTop: "0.4rem", marginBottom: "0.2rem" }}>{mod.title}</h2>
+        <p style={{ fontSize: "0.86rem", color: "var(--text-muted)" }}>{mod.desc}</p>
       </div>
 
-      {/* Dot progress */}
+      {/* Dots */}
       <div className="fc-dots">
         {mod.cards.map((_, i) => (
-          <div key={i} className={`fc-dot ${i === cardIdx ? "active" : i < cardIdx ? "done-dot" : ""}`} />
+          <div key={i} className={`fc-dot${i === cardIdx ? " active" : i < cardIdx ? " done-dot" : ""}`} />
         ))}
       </div>
 
       {/* Flashcard */}
       <div className="flashcard">
         <h2>{card.t}</h2>
-        <p style={{ marginBottom: "0" }}>{card.p}</p>
-        <div className="soft-box"><strong>🇦🇺 AU Example:</strong> {card.au}</div>
-        <div className="soft-box-grey"><strong>Key check:</strong> {card.reflect}</div>
+        <p>{card.p}</p>
+        <div className="fc-au"><strong>🇦🇺 AU Example:</strong> {card.au}</div>
+        <div className="fc-reflect"><strong>Key check:</strong> {card.reflect}</div>
       </div>
 
-      <p style={{ textAlign: "center", marginTop: "0.75rem", fontSize: "0.88rem" }}>
-        Card <strong>{cardIdx + 1}</strong> / <strong>{total}</strong>
+      <p style={{ textAlign: "center", fontSize: "0.84rem", color: "var(--text-muted)", marginTop: "0.75rem" }}>
+        Card <strong>{cardIdx + 1}</strong> of <strong>{total}</strong>
       </p>
 
       <div className="fc-nav">
-        <button className="btn" onClick={prev} disabled={cardIdx === 0}>Previous</button>
+        <button className="btn btn-outline" onClick={prev} disabled={cardIdx === 0}>← Previous</button>
         {!isLast ? (
-          <button className="btn btn-black" onClick={next}>Next</button>
+          <button className="btn btn-primary" onClick={next}>Next →</button>
         ) : (
-          <button className="btn btn-black" onClick={markComplete}>Complete Module ✓</button>
+          <button className="btn btn-success" onClick={markComplete}>Complete Module ✓</button>
         )}
       </div>
 
       {isLast && !isDone && (
-        <div className="module-complete-box" style={{ display: "block" }}>
-          <strong>You've reached the end of this module.</strong>
-          <p style={{ fontSize: "0.88rem", marginTop: "0.5rem" }}>
-            Mark it as done to track progress, or flag for review to revisit later.
+        <div className="complete-box">
+          <strong>You've reached the end of this module!</strong>
+          <p style={{ fontSize: "0.86rem", color: "#374151", margin: "0.5rem 0 0.85rem" }}>
+            Mark it as done to track progress, or flag for review.
           </p>
-          <div style={{ display: "flex", gap: "10px", marginTop: "0.75rem" }}>
-            <button className="btn" onClick={markReview}>Flag for Review</button>
-            <button className="btn btn-black" onClick={markComplete}>Mark Done &amp; Continue</button>
+          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
+            <button className="btn btn-outline btn-sm" onClick={markReview}>Flag for Review</button>
+            <button className="btn btn-success btn-sm" onClick={markComplete}>Mark Done &amp; Continue</button>
           </div>
         </div>
       )}
@@ -294,43 +328,41 @@ function PracticePage({
   const done = practiceItems.filter((p) => state.completedPractices.includes(p.id));
 
   return (
-    <div className="container">
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 900, marginBottom: "1rem" }}>Practice Hub</h1>
+    <div className="page-wrap">
+      <h1 style={{ fontSize: "1.55rem", fontWeight: 800, marginBottom: "1.1rem" }}>Practice Hub</h1>
 
       {!pretestDone && (
-        <div className="recommend-box">
-          <strong>💡 Tip:</strong> You have not completed the initial self-skills assessment yet. This short card-based check helps you understand your current skills before learning.
-          <button className="btn" style={{ marginLeft: "10px" }} onClick={() => setPage("assessment-pre")}>
-            Start Self-Assessment
-          </button>
+        <div className="alert alert-yellow">
+          <span>💡</span>
+          <div>
+            <strong>Complete the self-assessment first</strong> to measure your improvement later.{" "}
+            <button className="btn btn-primary btn-sm" style={{ marginTop: "0.35rem" }} onClick={() => setPage("assessment-pre")}>
+              Start Assessment
+            </button>
+          </div>
         </div>
       )}
 
       <div className="tab-switch">
-        <button className={`btn ${tab === "bank" ? "active" : ""}`} onClick={() => setTab("bank")}>
-          Question Bank <span className="count-chip">{banked.length}</span>
+        <button className={`tab-btn ${tab === "bank" ? "active" : ""}`} onClick={() => setTab("bank")}>
+          Question Bank ({banked.length})
         </button>
-        <button className={`btn ${tab === "done" ? "active" : ""}`} onClick={() => setTab("done")}>
-          Practiced <span className="count-chip">{done.length}</span>
+        <button className={`tab-btn ${tab === "done" ? "active" : ""}`} onClick={() => setTab("done")}>
+          Practiced ({done.length})
         </button>
       </div>
 
       {tab === "bank" && (
         banked.length === 0 ? (
-          <div className="empty-state">
-            <strong>🎉 All scenarios completed!</strong>
-            <p style={{ marginTop: "0.5rem" }}>Switch to the Practiced tab to review your work.</p>
-          </div>
+          <div className="empty-state"><div className="e-icon">🎉</div><strong>All scenarios completed!</strong><p>Switch to Practiced tab to review.</p></div>
         ) : (
           <div className="practice-card-grid">
             {banked.map((item) => (
               <div key={item.id} className="pcard" onClick={() => setScenarioItem(item)}>
-                <div className="practice-meta">
-                  <span className="practice-chip">{item.sourceLabel}</span>
-                  <span className="practice-chip">{item.label}</span>
-                </div>
-                <h4 style={{ fontWeight: 900, marginBottom: "0.3rem", fontSize: "0.9rem" }}>{item.title}</h4>
-                <p style={{ fontSize: "0.78rem", color: "#555" }}>{item.subtitle.split("|")[0].trim()}</p>
+                <div className="src-chip">{item.sourceLabel}</div>
+                <div style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", marginBottom: "0.3rem" }}>{item.label}</div>
+                <h4 style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: "0.25rem", lineHeight: 1.4 }}>{item.title}</h4>
+                <p style={{ fontSize: "0.76rem", color: "var(--text-muted)" }}>{item.subtitle.split("|")[0].trim()}</p>
               </div>
             ))}
           </div>
@@ -339,10 +371,7 @@ function PracticePage({
 
       {tab === "done" && (
         done.length === 0 ? (
-          <div className="empty-state">
-            <strong>📚 No scenarios practiced yet.</strong>
-            <p style={{ marginTop: "0.5rem" }}>Head to the Question Bank to get started.</p>
-          </div>
+          <div className="empty-state"><div className="e-icon">📚</div><strong>No scenarios practiced yet.</strong><p>Head to the Question Bank to get started.</p></div>
         ) : (
           <div className="practice-card-grid">
             {done.map((item) => {
@@ -350,18 +379,16 @@ function PracticePage({
               const bothRight = res?.q1 && res?.q2;
               return (
                 <div key={item.id} className="pcard done-card" onClick={() => setScenarioItem(item)}>
-                  <div className="practice-meta">
-                    <span className="practice-chip">{item.sourceLabel}</span>
-                    <span className="practice-chip">{item.label}</span>
-                    <span className="practice-chip" style={{
-                      background: bothRight ? "var(--completed)" : "var(--danger)",
-                      borderColor: bothRight ? "#090" : "#900",
-                      color: bothRight ? "#090" : "#900"
-                    }}>
-                      {bothRight ? "✓ Both correct" : "Review"}
-                    </span>
-                  </div>
-                  <h4 style={{ fontWeight: 900, marginBottom: "0.3rem", fontSize: "0.9rem" }}>{item.title}</h4>
+                  <div className="src-chip">{item.sourceLabel}</div>
+                  <div style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", marginBottom: "0.3rem" }}>{item.label}</div>
+                  <h4 style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: "0.4rem", lineHeight: 1.4 }}>{item.title}</h4>
+                  <span style={{
+                    fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: "999px",
+                    background: bothRight ? "#dcfce7" : "#fee2e2",
+                    color: bothRight ? "#166534" : "#991b1b"
+                  }}>
+                    {bothRight ? "✓ Both correct" : "Needs review"}
+                  </span>
                 </div>
               );
             })}
@@ -399,11 +426,7 @@ function ScenarioPage({
       const q2C = q2Ans === item.q2Correct;
       const newCompleted = state.completedPractices.includes(item.id)
         ? state.completedPractices : [...state.completedPractices, item.id];
-      setState({
-        ...state,
-        completedPractices: newCompleted,
-        practiceResults: { ...state.practiceResults, [item.id]: { q1: q1C, q2: q2C } },
-      });
+      setState({ ...state, completedPractices: newCompleted, practiceResults: { ...state.practiceResults, [item.id]: { q1: q1C, q2: q2C } } });
     }
     setStep(3);
   }
@@ -413,48 +436,42 @@ function ScenarioPage({
   const back = fromMisinfo ? "learning" : "practice";
 
   return (
-    <div className="container">
-      <button className="btn" onClick={() => setPage(back)}>
-        ← Back to {fromMisinfo ? "Learning" : "Practice"}
-      </button>
+    <div className="page-wrap">
+      <button className="back-btn" onClick={() => setPage(back)}>← Back to {fromMisinfo ? "Learning" : "Practice"}</button>
 
       {/* Step indicator */}
-      <div className="step-indicator" style={{ marginTop: "0.75rem" }}>
-        <span className={`step-dot${step === 1 ? " active" : step > 1 ? " done-step" : ""}`}>1. Identify Claim</span>
-        <span className={`step-dot${step === 2 ? " active" : step > 2 ? " done-step" : ""}`}>2. Judge Claim</span>
-        <span className={`step-dot${step === 3 ? " active" : ""}`}>3. Result</span>
+      <div className="steps-wrap">
+        {[{ label: "1. Identify Claim" }, { label: "2. Judge Claim" }, { label: "3. Result" }].map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, flex: i < 2 ? 1 : undefined }}>
+            <span className={`step-pill${step === i + 1 ? " active" : step > i + 1 ? " done-step" : ""}`}>{s.label}</span>
+            {i < 2 && <div className="step-line" />}
+          </div>
+        ))}
       </div>
 
       <div className="grid-2" style={{ marginTop: "1rem" }}>
-        {/* Left: Post */}
+        {/* Left: Post content */}
         <div className="card">
-          <span className="label">{item.sourceLabel}</span>
-          <h3 style={{ fontWeight: 900, margin: "0.5rem 0 0.25rem" }}>{item.title}</h3>
-          <p style={{ fontSize: "0.82rem", color: "#555", marginBottom: "0.5rem" }}><small>{item.subtitle}</small></p>
-          <div className="practice-post" dangerouslySetInnerHTML={{ __html: item.postText }} />
-          <div className="soft-box"><strong>Context:</strong> {item.contextText}</div>
+          <span className="src-chip">{item.sourceLabel}</span>
+          <h3 style={{ fontWeight: 800, fontSize: "0.97rem", margin: "0.5rem 0 0.2rem" }}>{item.title}</h3>
+          <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}><em>{item.subtitle}</em></p>
+          <div className="post-bubble" dangerouslySetInnerHTML={{ __html: item.postText }} />
+          <div className="context-box"><strong>Context:</strong> {item.contextText}</div>
         </div>
 
         {/* Right: Questions */}
         <div className="card">
           {step === 1 && (
             <>
-              <h3 style={{ marginBottom: "0.75rem" }}>1. Identify the Claim</h3>
-              <p style={{ fontSize: "0.88rem", marginBottom: "1rem" }}>{item.q1}</p>
+              <h3 style={{ fontWeight: 700, marginBottom: "0.7rem" }}>1. Identify the Claim</h3>
+              <p style={{ fontSize: "0.87rem", color: "var(--text-muted)", marginBottom: "0.9rem" }}>{item.q1}</p>
               {item.q1Options.map((opt, i) => {
-                let cls = "btn option-btn";
-                if (confirmed1) {
-                  if (i === item.q1Correct) cls += " correct";
-                  else if (i === q1Ans) cls += " incorrect";
-                } else if (q1Ans === i) cls += " selected";
-                return (
-                  <button key={i} className={cls} onClick={() => !confirmed1 && setQ1Ans(i)} disabled={confirmed1}>
-                    {opt}
-                  </button>
-                );
+                let cls = "option-btn";
+                if (confirmed1) { if (i === item.q1Correct) cls += " correct"; else if (i === q1Ans) cls += " incorrect"; }
+                else if (q1Ans === i) cls += " selected";
+                return <button key={i} className={cls} onClick={() => !confirmed1 && setQ1Ans(i)} disabled={confirmed1}>{opt}</button>;
               })}
-              <button className="btn btn-black" style={{ width: "100%", marginTop: "0.5rem" }}
-                onClick={confirmQ1} disabled={q1Ans === null}>
+              <button className="btn btn-primary" style={{ width: "100%", marginTop: "0.4rem" }} onClick={confirmQ1} disabled={q1Ans === null}>
                 Confirm Answer
               </button>
             </>
@@ -462,25 +479,17 @@ function ScenarioPage({
 
           {step === 2 && (
             <>
-              <h3 style={{ marginBottom: "0.75rem" }}>2. Judge the Claim</h3>
-              <p style={{ fontSize: "0.88rem", marginBottom: "1rem" }}>{item.q2Question}</p>
+              <h3 style={{ fontWeight: 700, marginBottom: "0.7rem" }}>2. Judge the Claim</h3>
+              <p style={{ fontSize: "0.87rem", color: "var(--text-muted)", marginBottom: "0.9rem" }}>{item.q2Question}</p>
               <div className="grid-2" style={{ gap: "8px" }}>
                 {item.q2Options.map((opt) => {
-                  let cls = "btn option-btn";
-                  if (confirmed2) {
-                    if (opt === item.q2Correct) cls += " correct";
-                    else if (opt === q2Ans) cls += " incorrect";
-                  } else if (q2Ans === opt) cls += " selected";
-                  return (
-                    <button key={opt} className={cls} style={{ textAlign: "center" }}
-                      onClick={() => !confirmed2 && setQ2Ans(opt)} disabled={confirmed2}>
-                      {opt}
-                    </button>
-                  );
+                  let cls = "option-btn";
+                  if (confirmed2) { if (opt === item.q2Correct) cls += " correct"; else if (opt === q2Ans) cls += " incorrect"; }
+                  else if (q2Ans === opt) cls += " selected";
+                  return <button key={opt} className={cls} style={{ textAlign: "center" }} onClick={() => !confirmed2 && setQ2Ans(opt)} disabled={confirmed2}>{opt}</button>;
                 })}
               </div>
-              <button className="btn btn-black" style={{ width: "100%", marginTop: "0.75rem" }}
-                onClick={confirmQ2} disabled={!q2Ans}>
+              <button className="btn btn-primary" style={{ width: "100%", marginTop: "0.75rem" }} onClick={confirmQ2} disabled={!q2Ans}>
                 Submit Judgement
               </button>
             </>
@@ -488,24 +497,23 @@ function ScenarioPage({
 
           {step === 3 && (
             <>
-              <div className="practice-meta">
-                <span className="practice-chip" style={{ borderColor: q1C ? "#090" : "#900", color: q1C ? "#090" : "#900" }}>
-                  Claim: {q1C ? "✓ Correct" : "✗ Incorrect"}
-                </span>
-                <span className="practice-chip" style={{ borderColor: q2C ? "#090" : "#900", color: q2C ? "#090" : "#900" }}>
-                  Verdict: {q2C ? "✓ Correct" : "✗ Incorrect"}
-                </span>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+                {[{ label: `Claim: ${q1C ? "✓" : "✗"}`, ok: q1C }, { label: `Verdict: ${q2C ? "✓" : "✗"}`, ok: q2C }].map((b) => (
+                  <span key={b.label} style={{
+                    padding: "3px 10px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700,
+                    background: b.ok ? "#dcfce7" : "#fee2e2", color: b.ok ? "#166534" : "#991b1b"
+                  }}>{b.label}</span>
+                ))}
               </div>
-              <div className="verdict">
-                <h4 style={{ marginBottom: "0.75rem" }}>Analysis Result</h4>
-                <p className="practice-result-line"><strong>Correct Verdict:</strong> <span className="v-chip">{item.q2Verdict}</span></p>
-                <p className="practice-result-line"><strong>Analysis:</strong> {item.explanation}</p>
-                <p className="practice-result-line"><strong>Tactic / Mechanism:</strong> {item.tactic}</p>
-                <p className="practice-result-line"><strong>Reference:</strong> {item.reference}</p>
+              <div className="verdict-box">
+                <h4>Analysis Result</h4>
+                <p className="verdict-line"><strong>Correct Verdict:</strong> <span className="v-chip">{item.q2Verdict}</span></p>
+                <p className="verdict-line"><strong>Analysis:</strong> {item.explanation}</p>
+                <p className="verdict-line"><strong>Tactic / Mechanism:</strong> {item.tactic}</p>
+                <p className="verdict-line"><strong>Reference:</strong> {item.reference}</p>
               </div>
-              <button className="btn btn-black" style={{ marginTop: "1rem", width: "100%" }}
-                onClick={() => setPage(back)}>
-                Continue to Next Content
+              <button className="btn btn-primary" style={{ width: "100%", marginTop: "1rem" }} onClick={() => setPage(back)}>
+                Back to {fromMisinfo ? "Learning" : "Practice Hub"}
               </button>
             </>
           )}
@@ -532,112 +540,98 @@ function MePage({ state, setPage }: { state: AppState; setPage: (p: Page) => voi
   ];
 
   return (
-    <div className="container">
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 900, marginBottom: "1rem" }}>My Progress</h1>
+    <div className="page-wrap">
+      <h1 style={{ fontSize: "1.55rem", fontWeight: 800, marginBottom: "1.1rem" }}>My Progress</h1>
 
       <div className="grid-2">
-        {/* Profile & stats */}
         <div className="card">
-          <span className="label">Student Profile</span>
-          <h3 style={{ marginTop: "0.5rem", fontWeight: 900 }}>Freya</h3>
-          <p style={{ fontSize: "0.82rem", color: "#555", marginBottom: "1rem" }}>Student Researcher</p>
-          <div>
-            <div className="me-stat-row"><span>Scenarios completed</span><strong>{totalPracticed}</strong></div>
-            <div className="me-stat-row"><span>Modules done</span><strong>{doneModules} / {moduleData.length}</strong></div>
-            <div className="me-stat-row"><span>Accuracy rate</span><strong>{totalPracticed > 0 ? `${avgScore}%` : "—"}</strong></div>
-            <div className="me-stat-row"><span>Badges earned</span><strong>{badges.filter(b => b.earned).length} / {badges.length}</strong></div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginBottom: "1rem" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, var(--primary), var(--primary-dark))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem" }}>🧑‍🎓</div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: "1.05rem" }}>Freya</div>
+              <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Student Researcher</div>
+            </div>
           </div>
+          <div className="stat-row"><span>Scenarios completed</span><strong>{totalPracticed}</strong></div>
+          <div className="stat-row"><span>Modules done</span><strong>{doneModules} / {moduleData.length}</strong></div>
+          <div className="stat-row"><span>Accuracy rate</span><strong>{totalPracticed > 0 ? `${avgScore}%` : "—"}</strong></div>
+          <div className="stat-row"><span>Badges earned</span><strong>{badges.filter(b => b.earned).length} / {badges.length}</strong></div>
         </div>
 
-        {/* Module progress */}
         <div className="card">
-          <span className="label">Module Progress</span>
-          <div style={{ marginTop: "0.75rem" }}>
-            {moduleData.map((mod, i) => {
-              const done = state.completedModules.includes(i);
-              const review = state.moduleNeedsReview.includes(i);
-              return (
-                <div key={i} style={{ marginBottom: "0.75rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.83rem", marginBottom: "3px" }}>
-                    <span>{mod.title}</span>
-                    <span style={{ color: done ? (review ? "#900" : "#090") : "#999" }}>
-                      {done ? (review ? "Review" : "100%") : "0%"}
-                    </span>
-                  </div>
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: done ? "100%" : "0%", background: review ? "#900" : "#000" }} />
-                  </div>
+          <div style={{ fontWeight: 700, marginBottom: "0.85rem" }}>Module Progress</div>
+          {moduleData.map((mod, i) => {
+            const done = state.completedModules.includes(i);
+            const review = state.moduleNeedsReview.includes(i);
+            return (
+              <div key={i} className="mod-prog-row">
+                <div className="mod-prog-label">{mod.title}</div>
+                <div className="mod-prog-bar">
+                  <div className="mod-prog-fill" style={{ width: done ? "100%" : "0%", background: review ? "var(--danger)" : "var(--primary)" }} />
                 </div>
-              );
-            })}
-          </div>
+                <div className="mod-prog-pct">{done ? (review ? "Review" : "100%") : "0%"}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Skill improvement */}
       <div className="card">
-        <span className="label">Skill Improvement</span>
-        <div className="score-compare" style={{ marginTop: "0.75rem" }}>
+        <div style={{ fontWeight: 700, marginBottom: "0.5rem" }}>Skill Improvement</div>
+        <div className="score-compare">
           <div className="score-box">
             <div className="score-box-label">Initial Self-Assessment</div>
-            {state.pretestScore !== null ? (
-              <div className="score-big">{state.pretestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal" }}>/6</span></div>
-            ) : (
-              <div className="locked-text">Not done</div>
-            )}
+            {state.pretestScore !== null
+              ? <div className="score-big">{state.pretestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/6</span></div>
+              : <div style={{ fontSize: "1.4rem", textAlign: "center", padding: "1rem 0", color: "var(--text-muted)" }}>Not done</div>}
           </div>
           <div className="score-box">
             <div className="score-box-label">Final Self-Assessment</div>
-            {state.posttestScore !== null ? (
-              <div className="score-big">{state.posttestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal" }}>/6</span></div>
-            ) : (
-              <div className="locked-text">🔒 Locked</div>
-            )}
+            {state.posttestScore !== null
+              ? <div className="score-big">{state.posttestScore}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/6</span></div>
+              : <div style={{ fontSize: "1.4rem", textAlign: "center", padding: "1rem 0", color: "var(--text-muted)" }}>🔒 Locked</div>}
           </div>
         </div>
         {state.pretestScore !== null && state.posttestScore !== null && (
-          <p style={{ textAlign: "center", marginTop: "0.75rem", fontWeight: 700 }}>
-            {state.posttestScore >= state.pretestScore
-              ? `↑ Improvement: +${state.posttestScore - state.pretestScore} points`
-              : `↓ Change: ${state.posttestScore - state.pretestScore} points`}
+          <p style={{ textAlign: "center", marginTop: "0.75rem", fontWeight: 700, color: state.posttestScore >= state.pretestScore ? "var(--success)" : "var(--danger)" }}>
+            {state.posttestScore >= state.pretestScore ? `↑ Improvement: +${state.posttestScore - state.pretestScore} points` : `↓ Change: ${state.posttestScore - state.pretestScore} points`}
           </p>
         )}
       </div>
 
       {/* Badges */}
       <div className="card">
-        <span className="label">Badges &amp; Awards</span>
-        <p style={{ fontSize: "0.85rem", color: "#555", marginTop: "0.5rem" }}>
-          Earn badges by completing lessons, improving your skills, and maintaining strong accuracy.
-        </p>
+        <div style={{ fontWeight: 700, marginBottom: "0.4rem" }}>Awards &amp; Badges</div>
+        <p style={{ fontSize: "0.84rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>Earn badges by completing modules, improving your skills, and practicing scenarios.</p>
         <div className="badge-row">
           {badges.map((b) => (
             <div key={b.name} className={`badge-pill ${b.earned ? "earned" : "locked"}`}>
-              <div>{b.name}</div>
-              <div style={{ fontSize: "0.7rem", color: "#666", marginTop: "2px" }}>{b.desc}</div>
+              <div style={{ fontSize: "1.3rem" }}>{b.name.split(" ")[0]}</div>
+              <div style={{ fontSize: "0.75rem", fontWeight: 700, marginTop: "2px" }}>{b.name.slice(3)}</div>
+              <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "1px" }}>{b.desc}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Final assessment */}
-      <div className="card" style={{ border: allDone ? "2px dashed #000" : "1px dashed #aaa", background: allDone ? "var(--completed)" : "#fafafa" }}>
-        <span className="label">Final Self-Skills Assessment</span>
+      {/* Final assessment unlock */}
+      <div className="card" style={{ border: allDone ? "1.5px solid #86efac" : "1.5px dashed var(--border)", background: allDone ? "#f0fdf4" : "#fafafa", textAlign: "center" }}>
+        <h3 style={{ fontWeight: 700, marginBottom: "0.5rem" }}>Final Self-Skills Assessment</h3>
         {allDone ? (
           <>
-            <p style={{ margin: "0.75rem 0" }}>All modules complete! Take the final assessment to measure your progress.</p>
-            {state.selfAssessments.final.completed ? (
-              <span className="complete-tag" style={{ fontSize: "0.9rem", padding: "4px 10px" }}>Final Assessment Done ✓</span>
-            ) : (
-              <button className="btn btn-black" onClick={() => setPage("assessment-post")}>Start Final Assessment</button>
-            )}
+            <p style={{ fontSize: "0.87rem", color: "#374151", marginBottom: "0.85rem" }}>All modules complete! Take the final assessment to measure your progress.</p>
+            {state.selfAssessments.final.completed
+              ? <span style={{ padding: "4px 12px", borderRadius: "999px", background: "#dcfce7", color: "#166534", fontWeight: 700, fontSize: "0.84rem" }}>Final Assessment Done ✓</span>
+              : <button className="btn btn-primary" onClick={() => setPage("assessment-post")}>Start Final Assessment →</button>}
           </>
         ) : (
           <>
-            <p style={{ margin: "0.75rem 0", color: "#666" }}>
-              🔒 Complete all {moduleData.length} learning modules to unlock. ({doneModules}/{moduleData.length} done)
+            <p style={{ fontSize: "0.87rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+              🔒 Complete all {moduleData.length} learning modules to unlock.{" "}
+              <strong style={{ color: "var(--primary)" }}>{doneModules}/{moduleData.length} done</strong>
             </p>
-            <button className="btn" disabled>Locked</button>
+            <button className="btn btn-outline" disabled>Locked</button>
           </>
         )}
       </div>
@@ -658,14 +652,14 @@ function AssessmentPage({
     assessState.answers.length > 0 ? assessState.answers : new Array(data.items.length).fill(null)
   );
   const [currentIdx, setCurrentIdx] = useState(assessState.currentIndex || 0);
-  const [done, setDone] = useState(assessState.completed);
+  const [isDone, setIsDone] = useState(assessState.completed);
 
   const item: AssessItem = data.items[currentIdx];
   const currentAns = answers[currentIdx];
   const isLast = currentIdx === data.items.length - 1;
 
   function select(i: number) {
-    if (done) return;
+    if (isDone) return;
     const a = [...answers]; a[currentIdx] = i; setAnswers(a);
   }
 
@@ -680,42 +674,39 @@ function AssessmentPage({
         selfAssessments: { ...state.selfAssessments, [assessKey]: { currentIndex: 0, answers, completed: true } },
         ...(type === "pre" ? { pretestScore: score, completedPretest: true } : { posttestScore: score }),
       });
-      setDone(true);
+      setIsDone(true);
     }
   }
 
-  // Show results
-  if (done || assessState.completed) {
+  if (isDone || assessState.completed) {
     const score = type === "pre" ? state.pretestScore : state.posttestScore;
     const finalAns = assessState.completed ? assessState.answers : answers;
     return (
-      <div className="container assessment-shell">
-        <div className="card" style={{ textAlign: "center" }}>
-          <h2 style={{ fontWeight: 900, fontSize: "1.4rem", marginBottom: "0.5rem" }}>Assessment Complete!</h2>
-          <p>You scored</p>
-          <div className="score-big">{score}<span style={{ fontSize: "1.2rem", fontWeight: "normal" }}>/6</span></div>
-          <p style={{ fontSize: "0.88rem", color: "#555", marginBottom: "1.5rem" }}>
-            {(score ?? 0) >= 5 ? "Excellent — strong critical thinking skills." : (score ?? 0) >= 3 ? "Good start — the modules will sharpen your skills." : "The modules will help you build these skills step by step."}
+      <div className="page-wrap">
+        <div className="card assess-wrap" style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>{(score ?? 0) >= 5 ? "🎉" : (score ?? 0) >= 3 ? "👍" : "📚"}</div>
+          <h2 style={{ fontWeight: 800, fontSize: "1.4rem" }}>Assessment Complete!</h2>
+          <p style={{ color: "var(--text-muted)", margin: "0.3rem 0 0.5rem" }}>You scored</p>
+          <div className="score-big">{score}<span style={{ fontSize: "1.2rem", fontWeight: "normal", color: "var(--text-muted)" }}>/6</span></div>
+          <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", margin: "0.5rem 0 1.5rem" }}>
+            {(score ?? 0) >= 5 ? "Excellent — strong critical thinking skills." : (score ?? 0) >= 3 ? "Good start — modules will sharpen your skills." : "The modules will help you build these skills step by step."}
           </p>
-
-          {/* Answer review */}
           {data.items.map((q, i) => {
             const ans = finalAns[i];
             const correct = ans === q.correctIndex;
             return (
-              <div key={i} style={{ textAlign: "left", border: `1px solid ${correct ? "#090" : "#900"}`, padding: "0.75rem", marginBottom: "0.5rem", background: correct ? "var(--completed)" : "var(--danger)" }}>
-                <div style={{ fontSize: "0.78rem", fontWeight: 700, color: correct ? "#090" : "#900", marginBottom: "4px" }}>
+              <div key={i} style={{ textAlign: "left", border: `1px solid ${correct ? "#86efac" : "#fca5a5"}`, borderRadius: 8, padding: "0.7rem 0.9rem", marginBottom: "0.5rem", background: correct ? "#f0fdf4" : "#fef2f2" }}>
+                <div style={{ fontSize: "0.77rem", fontWeight: 700, color: correct ? "#166534" : "#991b1b", marginBottom: "3px" }}>
                   {correct ? "✓ Correct" : "✗ Incorrect"} — {q.skill}
                 </div>
                 <div style={{ fontSize: "0.82rem" }}>
-                  <strong>Your answer:</strong> {ans !== null ? q.options[ans] : "No answer"}<br />
-                  {!correct && <span><strong>Correct:</strong> {q.options[q.correctIndex]}</span>}
+                  <strong>Your answer:</strong> {ans !== null ? q.options[ans] : "No answer"}
+                  {!correct && <><br /><strong>Correct:</strong> {q.options[q.correctIndex]}</>}
                 </div>
               </div>
             );
           })}
-
-          <button className="btn btn-black" style={{ marginTop: "0.75rem" }} onClick={() => setPage(type === "pre" ? "learning" : "me")}>
+          <button className="btn btn-primary" style={{ marginTop: "1rem" }} onClick={() => setPage(type === "pre" ? "learning" : "me")}>
             {type === "pre" ? "Start Learning →" : "View My Progress →"}
           </button>
         </div>
@@ -724,33 +715,30 @@ function AssessmentPage({
   }
 
   return (
-    <div className="container assessment-shell">
-      <button className="btn" onClick={() => setPage(type === "pre" ? "learning" : "me")}>← Cancel</button>
-      <div style={{ margin: "1rem 0 0.5rem" }}>
-        <span className="label">{data.title}</span>
-        <h2 style={{ fontWeight: 900, marginTop: "0.4rem" }}>Question {currentIdx + 1} of {data.items.length}</h2>
-        <div className="progress-track" style={{ marginTop: "0.5rem" }}>
-          <div className="progress-fill" style={{ width: `${(currentIdx / data.items.length) * 100}%` }} />
+    <div className="page-wrap">
+      <button className="back-btn" onClick={() => setPage(type === "pre" ? "learning" : "me")}>← Cancel</button>
+      <div className="assess-wrap">
+        <div style={{ marginBottom: "1rem" }}>
+          <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", letterSpacing: "0.05em", marginBottom: "0.3rem" }}>{data.title}</div>
+          <h2 style={{ fontWeight: 800 }}>Question {currentIdx + 1} of {data.items.length}</h2>
+          <div className="progress-bar" style={{ marginTop: "0.5rem" }}>
+            <div className="progress-fill" style={{ width: `${(currentIdx / data.items.length) * 100}%` }} />
+          </div>
         </div>
-      </div>
-
-      <div className="card">
-        <span className="label">{item.sourceLabel}</span>
-        <p style={{ fontSize: "0.75rem", color: "#555", margin: "4px 0 6px", textTransform: "uppercase" }}>Skill: {item.skill}</p>
-        <div className="assessment-post-card" dangerouslySetInnerHTML={{ __html: item.postText }} />
-        <p style={{ fontWeight: 700, margin: "1rem 0 0.75rem" }}>{item.question}</p>
-        {item.options.map((opt, i) => (
-          <button key={i}
-            className={`btn option-btn assessment-option${currentAns === i ? " selected" : ""}`}
-            onClick={() => select(i)}>
-            {opt}
-          </button>
-        ))}
-        <div className="assessment-toolbar">
-          <button className="btn" onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} disabled={currentIdx === 0}>← Back</button>
-          <button className="btn btn-black" onClick={next} disabled={currentAns === null}>
-            {isLast ? "Submit Assessment" : "Next →"}
-          </button>
+        <div className="card">
+          <span className="src-chip">{item.sourceLabel}</span>
+          <div style={{ fontSize: "0.72rem", color: "var(--primary)", fontWeight: 700, textTransform: "uppercase", margin: "4px 0 6px" }}>Skill: {item.skill}</div>
+          <div className="assess-post" dangerouslySetInnerHTML={{ __html: item.postText }} />
+          <p style={{ fontWeight: 700, fontSize: "0.95rem", margin: "0.85rem 0 0.7rem" }}>{item.question}</p>
+          {item.options.map((opt, i) => (
+            <button key={i} className={`option-btn${currentAns === i ? " selected" : ""}`} onClick={() => select(i)}>{opt}</button>
+          ))}
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.75rem" }}>
+            <button className="btn btn-outline" onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} disabled={currentIdx === 0}>← Back</button>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={next} disabled={currentAns === null}>
+              {isLast ? "Submit Assessment" : "Next →"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -760,8 +748,8 @@ function AssessmentPage({
 // ─── MAIN APP ───────────────────────────────────────────────────────────────
 export default function App() {
   const [state, setStateRaw] = useState<AppState>(loadState);
-  const [page, setPageRaw] = useState<Page>("learning");
-  const [scenarioItem, setScenarioItemRaw] = useState<PracticeItem | null>(null);
+  const [page, setPage] = useState<Page>("learning");
+  const [scenarioItem, setScenarioItem] = useState<PracticeItem | null>(null);
   const [fromMisinfo, setFromMisinfo] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -771,39 +759,22 @@ export default function App() {
     saveTimer.current = setTimeout(() => saveState(s), 300);
   }
 
-  function setPage(p: Page) { setPageRaw(p); }
-
   function openScenario(item: PracticeItem, misinfo = false) {
-    setScenarioItemRaw(item);
+    setScenarioItem(item);
     setFromMisinfo(misinfo);
-    setPageRaw("scenario");
+    setPage("scenario");
   }
 
   return (
-    <>
+    <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <Navbar page={page} setPage={setPage} />
-      {page === "learning" && (
-        <LearningPage state={state} setState={setState} setPage={setPage}
-          setScenarioItem={(item) => openScenario(item, true)} />
-      )}
-      {page === "lesson" && (
-        <LessonPage state={state} setState={setState} setPage={setPage} />
-      )}
-      {page === "practice" && (
-        <PracticePage state={state} setState={setState} setPage={setPage}
-          setScenarioItem={(item) => openScenario(item, false)} />
-      )}
-      {page === "scenario" && scenarioItem && (
-        <ScenarioPage item={scenarioItem} state={state} setState={setState}
-          setPage={setPage} fromMisinfo={fromMisinfo} />
-      )}
+      {page === "learning" && <LearningPage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, true)} />}
+      {page === "lesson" && <LessonPage state={state} setState={setState} setPage={setPage} />}
+      {page === "practice" && <PracticePage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, false)} />}
+      {page === "scenario" && scenarioItem && <ScenarioPage item={scenarioItem} state={state} setState={setState} setPage={setPage} fromMisinfo={fromMisinfo} />}
       {page === "me" && <MePage state={state} setPage={setPage} />}
-      {page === "assessment-pre" && (
-        <AssessmentPage type="pre" state={state} setState={setState} setPage={setPage} />
-      )}
-      {page === "assessment-post" && (
-        <AssessmentPage type="post" state={state} setState={setState} setPage={setPage} />
-      )}
-    </>
+      {page === "assessment-pre" && <AssessmentPage type="pre" state={state} setState={setState} setPage={setPage} />}
+      {page === "assessment-post" && <AssessmentPage type="post" state={state} setState={setState} setPage={setPage} />}
+    </div>
   );
 }
