@@ -82,6 +82,7 @@ function LearningPage({
   const pretestDone = state.selfAssessments.initial.completed;
   const doneModules = state.completedModules.length;
   const totalPracticed = state.completedPractices.length;
+  const allModulesDone = doneModules === moduleData.length;
 
   function openModule(idx: number) {
     setState({ ...state, currentModule: idx, currentCard: 0, lastLearningModule: idx });
@@ -148,34 +149,59 @@ function LearningPage({
         </div>
       )}
 
-      {/* Self-Skills Assessment grid */}
+      {/* Self-Skills Assessment — 2 main modules */}
       <div className="sec-title">Self-Skills Assessment</div>
-      <div className="skill-grid">
-        {selfSkillsAssessmentData.initial.items.map((item, idx) => {
-          const ans = state.selfAssessments.initial.answers[idx];
-          const correct = pretestDone && ans === item.correctIndex;
-          const wrong = pretestDone && ans !== item.correctIndex;
-          const iconColors = ["#e0eeff", "#fff3e0", "#fce4ec", "#e8f5e9", "#f3e5f5", "#e0f2fe"];
-          const icons = ["🔍", "⚖️", "🎯", "📷", "📋", "🗳️"];
-          return (
-            <div key={item.pairId} className="skill-card">
-              <div className="skill-icon" style={{ background: iconColors[idx] }}>{icons[idx]}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: "0.88rem" }}>{item.skill}</div>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{item.difficulty}</div>
-              </div>
-              {pretestDone && (
-                <span style={{
-                  fontSize: "0.7rem", fontWeight: 700, padding: "2px 7px", borderRadius: "999px",
-                  background: correct ? "#dcfce7" : "#fee2e2",
-                  color: correct ? "#166534" : "#991b1b"
-                }}>
-                  {correct ? "✓" : "✗ Review"}
-                </span>
-              )}
-            </div>
-          );
-        })}
+      <div className="grid-2" style={{ marginBottom: "1.25rem" }}>
+        {/* Initial Assessment */}
+        <div className="card" style={{ marginBottom: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <span className="mod-chip">Assessment Module 01</span>
+            {pretestDone && <span className="mod-tag done">Done</span>}
+          </div>
+          <h3 style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.4rem" }}>Initial Self-Skills Assessment</h3>
+          <p style={{ fontSize: "0.84rem", color: "var(--text-muted)", marginBottom: "0.85rem" }}>
+            A card-based self-check before learning. It helps users understand their current ability to identify claims, judge evidence, and recognise misinformation tactics.
+          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+              Status: <strong style={{ color: pretestDone ? "var(--success)" : "var(--primary)" }}>
+                {pretestDone ? `Completed (${state.pretestScore}/6)` : "Available"}
+              </strong>
+            </span>
+            <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-pre")}>
+              {pretestDone ? "Review Assessment" : "Start Self-Assessment"}
+            </button>
+          </div>
+        </div>
+
+        {/* Final Assessment */}
+        <div className="card" style={{ marginBottom: 0, opacity: allModulesDone ? 1 : 0.7 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <span className="mod-chip">Assessment Module 02</span>
+            {!allModulesDone && <span className="mod-tag" style={{ background: "#f3f4f6", color: "#6b7280" }}>🔒 Locked</span>}
+            {state.selfAssessments.final.completed && <span className="mod-tag done">Done</span>}
+          </div>
+          <h3 style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.4rem" }}>Final Self-Skills Assessment</h3>
+          <p style={{ fontSize: "0.84rem", color: "var(--text-muted)", marginBottom: "0.85rem" }}>
+            A parallel card-based self-check after all learning modules. It uses the same structure, skills, and comparable difficulty as the initial assessment.
+          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+              Status: <strong style={{ color: allModulesDone ? "var(--success)" : "var(--text-muted)" }}>
+                {state.selfAssessments.final.completed
+                  ? `Completed (${state.posttestScore}/6)`
+                  : allModulesDone ? "Unlocked" : `Locked (${doneModules}/${moduleData.length} modules done)`}
+              </strong>
+            </span>
+            {allModulesDone ? (
+              <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-post")} disabled={state.selfAssessments.final.completed}>
+                {state.selfAssessments.final.completed ? "Done ✓" : "Start Final Assessment"}
+              </button>
+            ) : (
+              <button className="btn btn-outline btn-sm" disabled>🔒 Locked</button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Misinfo This Week */}
