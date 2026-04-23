@@ -124,31 +124,6 @@ function LearningPage({
         </div>
       )}
 
-      {/* Pre-test nudge */}
-      {!pretestDone && (
-        <div className="alert alert-yellow">
-          <span style={{ fontSize: "1.1rem" }}>💡</span>
-          <div>
-            <strong>Start with a quick self-check</strong>
-            <p style={{ margin: "0.2rem 0 0.5rem", fontSize: "0.87rem" }}>
-              A 6-question assessment helps measure your starting skills before learning.
-            </p>
-            <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-pre")}>
-              Start Self-Assessment
-            </button>
-          </div>
-        </div>
-      )}
-
-      {pretestDone && state.pretestScore !== null && (
-        <div className="alert alert-green">
-          <span>✅</span>
-          <span>
-            <strong>Initial assessment complete</strong> — you scored {state.pretestScore}/6. Work through the modules below, then take the final assessment.
-          </span>
-        </div>
-      )}
-
       {/* Self-Skills Assessment — 2 main modules */}
       <div className="sec-title">Self-Skills Assessment</div>
       <div className="grid-2" style={{ marginBottom: "1.25rem" }}>
