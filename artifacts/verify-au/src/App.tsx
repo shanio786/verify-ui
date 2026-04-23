@@ -82,17 +82,100 @@ const moduleIcons = ["🔍", "🎭", "😤", "🍒", "📊"];
 const moduleColors = ["#e0eeff", "#fff3e0", "#fce4ec", "#e8f5e9", "#f3e5f5"];
 
 // ─── NAVBAR ────────────────────────────────────────────────────────────────
-function Navbar({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
+function Navbar({
+  page, setPage, user, onSignIn, onLogout, requireAuth,
+}: {
+  page: Page;
+  setPage: (p: Page) => void;
+  user: User | null;
+  onSignIn: () => void;
+  onLogout: () => void;
+  requireAuth: (action: () => void) => void;
+}) {
   const isL = ["learning", "lesson", "assessment-pre", "assessment-post"].includes(page);
   const isP = ["practice", "scenario"].includes(page);
   const isM = page === "me";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const firstName = user ? user.name.split(" ")[0] : "";
+
   return (
     <nav className="nav">
       <div className="nav-logo">VERIFY<span>-AU</span></div>
-      <div className="nav-links">
+      <div className="nav-links" style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
         <button className={`nav-btn ${isL ? "active" : ""}`} onClick={() => setPage("learning")}>Learning</button>
         <button className={`nav-btn ${isP ? "active" : ""}`} onClick={() => setPage("practice")}>Practice</button>
-        <button className={`nav-btn ${isM ? "active" : ""}`} onClick={() => setPage("me")}>Me</button>
+        <button
+          className={`nav-btn ${isM ? "active" : ""}`}
+          onClick={() => requireAuth(() => setPage("me"))}
+        >Me</button>
+        {user ? (
+          <div style={{ position: "relative", marginLeft: "0.5rem" }}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              style={{
+                display: "flex", alignItems: "center", gap: "0.4rem",
+                background: "rgba(255,255,255,0.12)",
+                border: "1.5px solid rgba(255,255,255,0.2)",
+                color: "white", padding: "0.4rem 0.7rem",
+                borderRadius: 999, fontSize: "0.82rem", fontWeight: 700, cursor: "pointer",
+              }}
+            >
+              <span style={{
+                width: 22, height: 22, borderRadius: "50%",
+                background: "var(--accent)", color: "var(--primary-dark)",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                fontSize: "0.72rem", fontWeight: 800,
+              }}>{firstName.charAt(0).toUpperCase()}</span>
+              {firstName}
+              <span style={{ fontSize: "0.65rem", opacity: 0.8 }}>▾</span>
+            </button>
+            {menuOpen && (
+              <>
+                <div
+                  onClick={() => setMenuOpen(false)}
+                  style={{ position: "fixed", inset: 0, zIndex: 50 }}
+                />
+                <div
+                  style={{
+                    position: "absolute", top: "calc(100% + 6px)", right: 0,
+                    background: "white", borderRadius: 10,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                    border: "1px solid var(--border)",
+                    minWidth: 180, zIndex: 60, overflow: "hidden",
+                  }}
+                >
+                  <div style={{ padding: "0.7rem 0.85rem", borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text)" }}>{user.name}</div>
+                    <div style={{ fontSize: "0.74rem", color: "var(--text-muted)", marginTop: 2 }}>{user.email}</div>
+                  </div>
+                  <button
+                    onClick={() => { setMenuOpen(false); setPage("me"); }}
+                    style={{ width: "100%", textAlign: "left", padding: "0.6rem 0.85rem", background: "white", border: "none", cursor: "pointer", fontSize: "0.85rem", color: "var(--text)" }}
+                  >👤 My Progress</button>
+                  <button
+                    onClick={() => { setMenuOpen(false); onLogout(); }}
+                    style={{ width: "100%", textAlign: "left", padding: "0.6rem 0.85rem", background: "white", border: "none", cursor: "pointer", fontSize: "0.85rem", color: "var(--danger)", borderTop: "1px solid var(--border)" }}
+                  >↩ Log out</button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={onSignIn}
+            style={{
+              marginLeft: "0.5rem",
+              background: "var(--accent)",
+              color: "var(--primary-dark)",
+              border: "none",
+              padding: "0.45rem 0.95rem",
+              borderRadius: 999,
+              fontWeight: 800,
+              fontSize: "0.82rem",
+              cursor: "pointer",
+            }}
+          >Sign In</button>
+        )}
       </div>
     </nav>
   );
@@ -100,21 +183,28 @@ function Navbar({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
 
 // ─── LEARNING HUB ──────────────────────────────────────────────────────────
 function LearningPage({
-  state, setState, setPage, setScenarioItem, userName,
+  state, setState, setPage, setScenarioItem, userName, loggedIn, requireAuth,
 }: {
   state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
   setScenarioItem: (item: PracticeItem) => void;
   userName: string;
+  loggedIn: boolean;
+  requireAuth: (action: () => void) => void;
 }) {
   const pretestDone = state.selfAssessments.initial.completed;
   const doneModules = state.completedModules.length;
   const totalPracticed = state.completedPractices.length;
   const allModulesDone = doneModules === moduleData.length;
+  const lockIcon = !loggedIn ? <span style={{ marginLeft: "0.4rem", fontSize: "0.78rem", opacity: 0.85 }}>🔒</span> : null;
 
   function openModule(idx: number) {
-    setState({ ...state, currentModule: idx, currentCard: 0, lastLearningModule: idx });
-    setPage("lesson");
+    requireAuth(() => {
+      setState({ ...state, currentModule: idx, currentCard: 0, lastLearningModule: idx });
+      setPage("lesson");
+    });
   }
+  function gotoAssessment(target: Page) { requireAuth(() => setPage(target)); }
+  function openScenarioGuarded(item: PracticeItem) { requireAuth(() => setScenarioItem(item)); }
 
   return (
     <div className="page-wrap">
@@ -160,7 +250,7 @@ function LearningPage({
             <p style={{ margin: "0.2rem 0 0.5rem", fontSize: "0.87rem" }}>
               A {selfSkillsAssessmentData.initial.items.length}-question scenario assessment helps measure your starting skills before learning.
             </p>
-            <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-pre")}>
+            <button className="btn btn-primary btn-sm" onClick={() => gotoAssessment("assessment-pre")}>
               Start Self-Assessment
             </button>
           </div>
@@ -195,7 +285,7 @@ function LearningPage({
                 {pretestDone ? `Completed (${state.pretestScore}/${selfSkillsAssessmentData.initial.items.length})` : "Available"}
               </strong>
             </span>
-            <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-pre")}>
+            <button className="btn btn-primary btn-sm" onClick={() => gotoAssessment("assessment-pre")}>
               {pretestDone ? "Review Assessment" : "Start Self-Assessment"}
             </button>
           </div>
@@ -221,7 +311,7 @@ function LearningPage({
               </strong>
             </span>
             {allModulesDone ? (
-              <button className="btn btn-primary btn-sm" onClick={() => setPage("assessment-post")} disabled={state.selfAssessments.final.completed}>
+              <button className="btn btn-primary btn-sm" onClick={() => gotoAssessment("assessment-post")} disabled={state.selfAssessments.final.completed}>
                 {state.selfAssessments.final.completed ? "Done ✓" : "Start Final Assessment"}
               </button>
             ) : (
@@ -238,7 +328,7 @@ function LearningPage({
           <h3>The "Pencil-Gate" Theory</h3>
           <p>Claims about erasable AEC pencils are trending. Practice identifying the claim and spotting the tactic.</p>
         </div>
-        <button className="btn btn-outline" style={{ flexShrink: 0 }} onClick={() => { setScenarioItem(misinfoThisWeekItem); setPage("scenario"); }}>
+        <button className="btn btn-outline" style={{ flexShrink: 0 }} onClick={() => openScenarioGuarded(misinfoThisWeekItem)}>
           Quick Analysis
         </button>
       </div>
@@ -274,9 +364,9 @@ function LearningPage({
               {/* Start Learn button */}
               <button
                 className="start-btn"
-                onClick={(e) => { e.stopPropagation(); setState({ ...state, currentModule: idx, currentCard: 0, lastLearningModule: idx }); setPage("lesson"); }}
+                onClick={(e) => { e.stopPropagation(); openModule(idx); }}
               >
-                {isDone ? "↩ Review" : "▶ Start Learn"}
+                {isDone ? "↩ Review" : "▶ Start Learn"}{lockIcon}
               </button>
             </div>
           );
@@ -370,15 +460,19 @@ function LessonPage({ state, setState, setPage }: {
 
 // ─── PRACTICE HUB ──────────────────────────────────────────────────────────
 function PracticePage({
-  state, setState, setPage, setScenarioItem,
+  state, setState, setPage, setScenarioItem, loggedIn, requireAuth,
 }: {
   state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
   setScenarioItem: (item: PracticeItem) => void;
+  loggedIn: boolean;
+  requireAuth: (action: () => void) => void;
 }) {
   const [tab, setTab] = useState<"bank" | "done">("bank");
   const pretestDone = state.selfAssessments.initial.completed;
   const banked = practiceItems.filter((p) => !state.completedPractices.includes(p.id));
   const done = practiceItems.filter((p) => state.completedPractices.includes(p.id));
+  function gotoAssessment(target: Page) { requireAuth(() => setPage(target)); }
+  function openItem(item: PracticeItem) { requireAuth(() => setScenarioItem(item)); }
 
   return (
     <div className="page-wrap">
@@ -389,7 +483,7 @@ function PracticePage({
           <span>💡</span>
           <div>
             <strong>Complete the self-assessment first</strong> to measure your improvement later.{" "}
-            <button className="btn btn-primary btn-sm" style={{ marginTop: "0.35rem" }} onClick={() => setPage("assessment-pre")}>
+            <button className="btn btn-primary btn-sm" style={{ marginTop: "0.35rem" }} onClick={() => gotoAssessment("assessment-pre")}>
               Start Assessment
             </button>
           </div>
@@ -411,7 +505,7 @@ function PracticePage({
         ) : (
           <div className="practice-card-grid">
             {banked.map((item) => (
-              <div key={item.id} className="pcard" onClick={() => setScenarioItem(item)}>
+              <div key={item.id} className="pcard" onClick={() => openItem(item)}>
                 <div className="src-chip">{item.sourceLabel}</div>
                 <div style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", marginBottom: "0.3rem" }}>{item.label}</div>
                 <h4 style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: "0.25rem", lineHeight: 1.4 }}>{item.title}</h4>
@@ -431,7 +525,7 @@ function PracticePage({
               const res = state.practiceResults[item.id];
               const bothRight = res?.q1 && res?.q2;
               return (
-                <div key={item.id} className="pcard done-card" onClick={() => setScenarioItem(item)}>
+                <div key={item.id} className="pcard done-card" onClick={() => openItem(item)}>
                   <div className="src-chip">{item.sourceLabel}</div>
                   <div style={{ fontSize: "0.68rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", marginBottom: "0.3rem" }}>{item.label}</div>
                   <h4 style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: "0.4rem", lineHeight: 1.4 }}>{item.title}</h4>
@@ -814,8 +908,14 @@ function AssessmentPage({
   );
 }
 
-// ─── LOGIN / SIGNUP PAGE ────────────────────────────────────────────────────
-function LoginPage({ onAuth }: { onAuth: (u: User) => void }) {
+// ─── LOGIN / SIGNUP MODAL ──────────────────────────────────────────────────
+function LoginModal({
+  onAuth, onClose, reason,
+}: {
+  onAuth: (u: User) => void;
+  onClose: () => void;
+  reason?: string;
+}) {
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -856,12 +956,34 @@ function LoginPage({ onAuth }: { onAuth: (u: User) => void }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
-      <div className="card" style={{ width: "100%", maxWidth: 420, padding: "2rem 1.75rem" }}>
-        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "rgba(15, 23, 42, 0.55)",
+        backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "1.5rem", animation: "fadeIn 0.18s ease-out",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="card"
+        style={{ width: "100%", maxWidth: 420, padding: "2rem 1.75rem", position: "relative", margin: 0 }}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute", top: 10, right: 12,
+            background: "transparent", border: "none", fontSize: "1.4rem",
+            color: "var(--text-muted)", cursor: "pointer", lineHeight: 1,
+          }}
+        >×</button>
+        <div style={{ textAlign: "center", marginBottom: "1.25rem" }}>
           <div style={{ fontWeight: 800, fontSize: "1.6rem", color: "var(--primary)" }}>VERIFY<span style={{ color: "var(--accent)" }}>-AU</span></div>
           <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.4rem" }}>
-            Australian election information literacy
+            {reason || "Sign up or log in to track your progress."}
           </p>
         </div>
 
@@ -970,6 +1092,9 @@ export default function App() {
   const [page, setPage] = useState<Page>("learning");
   const [scenarioItem, setScenarioItem] = useState<PracticeItem | null>(null);
   const [fromMisinfo, setFromMisinfo] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginReason, setLoginReason] = useState<string | undefined>(undefined);
+  const pendingActionRef = useRef<(() => void) | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function setState(s: AppState) {
@@ -984,26 +1109,77 @@ export default function App() {
     setPage("scenario");
   }
 
+  function requireAuth(action: () => void) {
+    if (user) { action(); return; }
+    pendingActionRef.current = action;
+    setLoginReason("Sign up or log in to continue — your progress will be saved.");
+    setLoginOpen(true);
+  }
+
+  function openSignIn() {
+    pendingActionRef.current = null;
+    setLoginReason(undefined);
+    setLoginOpen(true);
+  }
+
+  function handleAuth(u: User) {
+    setUser(u);
+    setLoginOpen(false);
+    const pending = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (pending) setTimeout(pending, 0);
+  }
+
   function logout() {
     saveUser(null);
     setUser(null);
     setPage("learning");
   }
 
-  if (!user) {
-    return <LoginPage onAuth={(u) => setUser(u)} />;
-  }
-
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      <Navbar page={page} setPage={setPage} />
-      {page === "learning" && <LearningPage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, true)} userName={user.name} />}
+      <Navbar
+        page={page}
+        setPage={setPage}
+        user={user}
+        onSignIn={openSignIn}
+        onLogout={logout}
+        requireAuth={requireAuth}
+      />
+      {page === "learning" && (
+        <LearningPage
+          state={state}
+          setState={setState}
+          setPage={setPage}
+          setScenarioItem={(item) => openScenario(item, true)}
+          userName={user ? user.name : "Guest"}
+          loggedIn={!!user}
+          requireAuth={requireAuth}
+        />
+      )}
       {page === "lesson" && <LessonPage state={state} setState={setState} setPage={setPage} />}
-      {page === "practice" && <PracticePage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, false)} />}
+      {page === "practice" && (
+        <PracticePage
+          state={state}
+          setState={setState}
+          setPage={setPage}
+          setScenarioItem={(item) => openScenario(item, false)}
+          loggedIn={!!user}
+          requireAuth={requireAuth}
+        />
+      )}
       {page === "scenario" && scenarioItem && <ScenarioPage item={scenarioItem} state={state} setState={setState} setPage={setPage} fromMisinfo={fromMisinfo} />}
-      {page === "me" && <MePage state={state} setPage={setPage} user={user} onLogout={logout} />}
+      {page === "me" && user && <MePage state={state} setPage={setPage} user={user} onLogout={logout} />}
       {page === "assessment-pre" && <AssessmentPage type="pre" state={state} setState={setState} setPage={setPage} />}
       {page === "assessment-post" && <AssessmentPage type="post" state={state} setState={setState} setPage={setPage} />}
+
+      {loginOpen && (
+        <LoginModal
+          reason={loginReason}
+          onAuth={handleAuth}
+          onClose={() => { setLoginOpen(false); pendingActionRef.current = null; }}
+        />
+      )}
     </div>
   );
 }
