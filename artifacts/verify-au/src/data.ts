@@ -5,12 +5,19 @@ export interface FlashCard {
   reflect: string;
 }
 
+export interface KeyCheckQuestion {
+  q: string;
+  options: string[];
+  correct: number;
+}
+
 export interface Module {
   title: string;
   label: string;
   desc: string;
   relatedPractice: string;
   cards: FlashCard[];
+  keyCheckQuestions: KeyCheckQuestion[];
 }
 
 export interface PracticeItem {
@@ -65,7 +72,12 @@ export const moduleData: Module[] = [
       { t: 'Claim vs opinion', p: 'Opinions express judgement or feeling. Claims assert something factual about the world.', au: '"I do not trust the result" is opinion. "Votes were altered in Queensland booths" is a claim.', reflect: 'Not every sentence in a post should be treated as evidence-based.' },
       { t: 'Where claims appear', p: 'Claims can appear in headlines, captions, memes, comments, rumours, and quoted "insider" language.', au: 'Australian election rumours often use short captions or screenshots to disguise a bold claim.', reflect: 'Always identify the core statement before deciding whether it is true or false.' },
       { t: 'Ready to apply it?', p: 'In practice, you will read a realistic post and identify the main claim before judging whether it is true, false, misleading, or unsupported.', au: 'The Queensland "disappearing ink" scenario is a strong first example.', reflect: 'Next step: apply the concept, not just memorise the definition.' }
-    ]
+    ],
+    keyCheckQuestions: [
+      { q: 'What is a claim?', options: ['A statement that can be checked with evidence', 'An emotional opinion about politics', 'Any sentence that sounds important or urgent'], correct: 0 },
+      { q: 'How do you separate a claim from an opinion?', options: ['Claims always use stronger language than opinions', 'Claims assert something factual that can be tested; opinions express judgement or feeling', 'Opinions are always shorter and simpler than claims'], correct: 1 },
+      { q: 'What should you do FIRST when reading political content?', options: ['Immediately judge whether it is true or false', 'Identify the specific verifiable statement being made', 'Check how many likes or shares the post has received'], correct: 1 },
+    ],
   },
   {
     title: 'False Authority',
@@ -78,7 +90,12 @@ export const moduleData: Module[] = [
       { t: 'Warning signs', p: 'Look for "experts say," "officials admit," or "insiders reveal" without names, documents, or clear attribution.', au: 'Anonymous authority claims spread quickly during election periods because they sound urgent and privileged.', reflect: 'Vague sources should lower confidence, not raise it.' },
       { t: 'How to respond', p: 'Return to the claim itself. Ask what concrete evidence supports it, not who allegedly said it.', au: 'If the post only cites unnamed experts, the claim may be unsupported or misleading.', reflect: 'Move from who is talking to what can actually be checked.' },
       { t: 'Ready to apply it?', p: 'The related scenario asks you to evaluate a post that relies on unnamed authorities to question an election process.', au: 'Use the post itself to distinguish source credibility from claim evidence.', reflect: 'You are now looking for both the claim and the source weakness.' }
-    ]
+    ],
+    keyCheckQuestions: [
+      { q: 'What is false authority?', options: ['Citing a real credentialed expert who disagrees', 'Using vague, unnamed, or unverifiable sources to make a claim sound credible', 'Presenting statistics without a clear methodology'], correct: 1 },
+      { q: 'Which phrase is a warning sign of false authority?', options: ['"According to the AEC official report published March 2025"', '"Independent experts confirm…" with no names or reports cited', '"A 2024 peer-reviewed study in Nature found…"'], correct: 1 },
+      { q: 'How should you respond to a claim backed only by unnamed sources?', options: ['Trust it — insiders often know more than the public', 'Return to the claim itself and ask what concrete evidence actually supports it', 'Reject it immediately without any further reading'], correct: 1 },
+    ],
   },
   {
     title: 'Emotional Framing',
@@ -91,7 +108,12 @@ export const moduleData: Module[] = [
       { t: 'Warning signs', p: 'Look for words like "urgent," "before it is too late," "they are hiding the truth," or "you are being betrayed."', au: 'Posts about election integrity frequently use crisis framing to create a sense of emergency.', reflect: 'Emotion may be the delivery method, but you still need to test the factual claim.' },
       { t: 'How to respond', p: 'After noticing emotional framing, ask what evidence is actually provided and whether the claim is specific enough to verify.', au: 'A dramatic post without sources may still contain a weak or unsupported claim.', reflect: 'Do not let the emotional tone do the evidential work.' },
       { t: 'Ready to apply it?', p: 'The related scenario asks you to identify both the claim and the emotional technique used to pressure the reader.', au: 'This mirrors the type of content users may encounter during Australian election discourse.', reflect: 'Try to separate the tactic from the truth status of the claim.' }
-    ]
+    ],
+    keyCheckQuestions: [
+      { q: 'What is emotional framing?', options: ['Providing clear evidence to build a persuasive conclusion', 'Using fear, outrage, or urgency to make a claim feel believable before it is examined', 'Writing in a calm, neutral tone to avoid influencing readers'], correct: 1 },
+      { q: 'When you notice strong emotional language in a post, what should you do?', options: ['Share it quickly — urgency signals it is important', 'Slow down and identify the specific factual claim being made', 'Dismiss it entirely as fake news without reading further'], correct: 1 },
+      { q: 'Which phrase is a typical emotional framing warning sign?', options: ['"According to official AEC data released last week…"', '"Before it is too late — they are hiding the truth from you"', '"Research suggests a correlation between turnout and temperature"'], correct: 1 },
+    ],
   },
   {
     title: 'Selective Evidence',
@@ -104,7 +126,12 @@ export const moduleData: Module[] = [
       { t: 'Common pattern', p: 'Cherry-picked examples often move from one anecdote to a sweeping conclusion.', au: 'A post may cite one vote-counting delay and use it as proof of national manipulation.', reflect: 'One example is not the same as a representative pattern.' },
       { t: 'How to respond', p: 'Check whether broader context, comparative data, or alternative explanations are missing.', au: 'The AEC may have already explained a delay or irregularity, which changes the interpretation.', reflect: 'Context often changes the meaning of an example.' },
       { t: 'Ready to apply it?', p: 'The related scenario asks you to judge whether a claim is based on a representative pattern or cherry-picked evidence.', au: 'This is useful for reading election debates and policy commentary.', reflect: 'Look for the leap from a small detail to a big conclusion.' }
-    ]
+    ],
+    keyCheckQuestions: [
+      { q: 'What is selective evidence?', options: ['Showing only details that support one side while hiding evidence that weakens the conclusion', 'Using multiple sources to verify a claim thoroughly', 'Quoting statistics with their full methodology and context'], correct: 0 },
+      { q: 'One polling delay is cited as proof the "whole election is rigged." This is an example of:', options: ['A complete and representative statistical analysis', 'Moving from one anecdote to a sweeping, unsupported conclusion', 'A valid use of comparative evidence'], correct: 1 },
+      { q: 'When you encounter selective evidence, what key question should you ask?', options: ['Is the source popular or well-followed?', 'What is missing — what context or counter-evidence has been left out?', 'Does the claim use emotional language?'], correct: 1 },
+    ],
   },
   {
     title: 'Misleading Statistics',
@@ -117,7 +144,12 @@ export const moduleData: Module[] = [
       { t: 'Graph tricks', p: 'Graphs can distort reality through cropped axes, missing labels, or selective time frames.', au: 'A chart about election polling can imply a huge collapse if the axis is compressed.', reflect: 'Visual confidence does not guarantee statistical honesty.' },
       { t: 'Source and method checks', p: 'Always ask who produced the statistic, when it was collected, and how the sample was constructed.', au: 'Polling claims without source names or methodology should be treated cautiously.', reflect: 'No source, no method, no confidence.' },
       { t: 'Ready to apply it?', p: 'The related scenario asks you to judge whether a political statistic is informative, misleading, or unsupported.', au: 'This reflects how election narratives often use numbers as persuasion tools.', reflect: 'You are testing the presentation of the number, not just the number itself.' }
-    ]
+    ],
+    keyCheckQuestions: [
+      { q: 'What is the main problem with a statistic like "Support doubled" with no context?', options: ['It lacks any emotional language', 'The base value is hidden — it could be 2%→4% or 20%→40%, changing the whole meaning', 'The source is unnamed'], correct: 1 },
+      { q: 'A polling chart looks dramatic but the Y-axis starts at 45%. This is an example of:', options: ['Accurate and transparent data presentation', 'A cropped axis that exaggerates visual impact without changing actual numbers', 'Selective evidence'], correct: 1 },
+      { q: 'What three things should you always check about a statistic?', options: ['Who produced it, when it was collected, and how the sample was constructed', 'How dramatic it looks, how many likes it received, and who shared it first', 'Whether it uses percentages, large numbers, or graphs'], correct: 0 },
+    ],
   }
 ];
 
