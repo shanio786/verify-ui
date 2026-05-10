@@ -145,7 +145,7 @@ function LearningPage({ state, setState, setPage, setScenarioItem, userName, log
   const lockIcon = !loggedIn ? <span style={{ marginLeft: "0.4rem", fontSize: "0.78rem", opacity: 0.85 }}>🔒</span> : null;
 
   function openModule(idx: number) {
-    requireAuth(() => { setState({ ...state, currentModule: idx, currentCard: 0, lastLearningModule: idx }); setPage("lesson"); });
+    requireAuth(() => { const card = idx === state.currentModule ? state.currentCard : 0; setState({ ...state, currentModule: idx, currentCard: card, lastLearningModule: idx }); setPage("lesson"); });
   }
   function gotoAssessment(target: Page) { requireAuth(() => setPage(target)); }
   function openScenarioGuarded(item: PracticeItem) { requireAuth(() => setScenarioItem(item)); }
