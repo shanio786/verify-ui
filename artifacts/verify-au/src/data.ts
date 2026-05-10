@@ -172,10 +172,11 @@ export const misinfoThisWeekItem: PracticeItem = {
   explanation: 'The post makes a serious accusation about vote tampering but gives no verifiable evidence, official source, or documented incident. It relies on suspicion and urgency rather than proof.',
   tactic: 'Claim identification + emotional framing',
   reference: 'Use official election guidance and credible evidence before accepting claims about voting materials or vote manipulation.',
-  event: 'Any Federal Election'
+  event: 'Any Federal Election',
+  mechanisms: [0, 2],
 };
 
-export const practiceItems: PracticeItem[] = [
+const practiceItemsBase: PracticeItem[] = [
   {
     id: 'practice-01',
     label: 'Scenario 1',
@@ -1428,6 +1429,30 @@ export const practiceItems: PracticeItem[] = [
   },
 ];
 
+const practiceItemMechanisms: Record<string, number[]> = {
+  "practice-01": [2, 3], "practice-02": [0, 3], "practice-03": [0, 2],
+  "practice-04": [0, 1], "practice-05": [2, 3], "practice-06": [2, 3],
+  "practice-07": [0, 1], "practice-08": [0, 1], "practice-09": [0, 1],
+  "practice-10": [0, 4], "practice-11": [0, 2], "practice-12": [0, 1],
+  "practice-13": [0, 1], "practice-14": [1, 2], "practice-15": [1, 3],
+  "practice-16": [2, 3], "practice-17": [0, 2], "practice-18": [0, 1],
+  "practice-19": [0, 2], "practice-20": [0, 2], "practice-21": [1, 2],
+  "practice-22": [2, 3], "practice-23": [1, 2], "practice-24": [0, 1],
+  "practice-25": [0, 1], "practice-26": [0, 2], "practice-27": [0, 1],
+  "practice-28": [0, 1], "practice-29": [0, 3], "practice-30": [0, 1],
+  "practice-31": [2, 4], "practice-32": [0, 2], "practice-33": [0, 1],
+  "practice-34": [0, 3], "practice-35": [0, 3], "practice-36": [0, 2],
+  "practice-37": [0, 2], "practice-38": [2, 3], "practice-39": [0, 2],
+  "practice-40": [0, 3], "practice-41": [0, 1], "practice-42": [0, 2],
+  "practice-43": [0, 1], "practice-44": [0, 2], "practice-45": [1, 2],
+  "practice-46": [0, 2], "practice-47": [0, 2], "practice-48": [0, 2],
+  "practice-49": [0, 2], "practice-50": [0, 2],
+};
+
+export const practiceItems: PracticeItem[] = practiceItemsBase.map((item) => ({
+  ...item,
+  mechanisms: practiceItemMechanisms[item.id] || [0],
+}));
 
 export const selfSkillsAssessmentData: { initial: AssessSection; final: AssessSection } = {
   initial: {

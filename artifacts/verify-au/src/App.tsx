@@ -74,25 +74,6 @@ const MODULE_NAMES = ["Claim Identification", "False Authority", "Emotional Fram
 const moduleIcons = ["🔍", "🎭", "😤", "🍒", "📊"];
 const moduleColors = ["#e0eeff", "#fff3e0", "#fce4ec", "#e8f5e9", "#f3e5f5"];
 
-const practiceItemMechanisms: Record<string, number[]> = {
-  "practice-01": [2, 3], "practice-02": [0, 3], "practice-03": [0, 2],
-  "practice-04": [0, 1], "practice-05": [2, 3], "practice-06": [2, 3],
-  "practice-07": [0, 1], "practice-08": [0, 1], "practice-09": [0, 1],
-  "practice-10": [0, 4], "practice-11": [0, 2], "practice-12": [0, 1],
-  "practice-13": [0, 1], "practice-14": [1, 2], "practice-15": [1, 3],
-  "practice-16": [2, 3], "practice-17": [0, 2], "practice-18": [0, 1],
-  "practice-19": [0, 2], "practice-20": [0, 2], "practice-21": [1, 2],
-  "practice-22": [2, 3], "practice-23": [1, 2], "practice-24": [0, 1],
-  "practice-25": [0, 1], "practice-26": [0, 2], "practice-27": [0, 1],
-  "practice-28": [0, 1], "practice-29": [0, 3], "practice-30": [0, 1],
-  "practice-31": [2, 4], "practice-32": [0, 2], "practice-33": [0, 1],
-  "practice-34": [0, 3], "practice-35": [0, 3], "practice-36": [0, 2],
-  "practice-37": [0, 2], "practice-38": [2, 3], "practice-39": [0, 2],
-  "practice-40": [0, 3], "practice-41": [0, 1], "practice-42": [0, 2],
-  "practice-43": [0, 1], "practice-44": [0, 2], "practice-45": [1, 2],
-  "practice-46": [0, 2], "practice-47": [0, 2], "practice-48": [0, 2],
-  "practice-49": [0, 2], "practice-50": [0, 2], "misinfo-week": [0, 2],
-};
 
 function addActivity(state: AppState, text: string): AppState {
   const time = new Date().toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
@@ -546,7 +527,7 @@ function ScenarioPage({ item, state, setState, setPage, fromMisinfo }: {
   const [confirmed2, setConfirmed2] = useState(false);
   const [q3Submitted, setQ3Submitted] = useState(false);
 
-  const correctMechanisms = practiceItemMechanisms[item.id] || [0];
+  const correctMechanisms = item.mechanisms || [0];
   const back = fromMisinfo ? "learning" : "practice";
 
   function confirmQ1() {
@@ -731,6 +712,7 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
     { emoji: "😤", name: "Calm Reader", earned: (state.keyCheckPassed || []).includes(2), desc: "Module 3 key check passed" },
     { emoji: "🍒", name: "Cherry Picker", earned: (state.keyCheckPassed || []).includes(3), desc: "Module 4 key check passed" },
     { emoji: "📊", name: "Data Analyst", earned: (state.keyCheckPassed || []).includes(4), desc: "Module 5 key check passed" },
+    { emoji: "🎓", name: "Full Curriculum", earned: allKeyChecksDone, desc: "All 5 key checks passed" },
     { emoji: "🏋️", name: "Practice Set", earned: practiceSetEarned, desc: "All practiced scenarios fully correct" },
     { emoji: "🎯", name: "Post-test Taken", earned: state.selfAssessments.final.completed, desc: "Final assessment completed" },
     { emoji: "📈", name: "Growth Champion", earned: growthPoints !== null && growthPoints > 0, desc: "Post-test beats pre-test" },
@@ -875,13 +857,23 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
 function WeeklyPage({ state, setPage, setScenarioItem, requireAuth }: {
   state: AppState; setPage: (p: Page) => void; setScenarioItem: (item: PracticeItem) => void; requireAuth: (action: () => void) => void;
 }) {
-  const weeklyModules = getWeeklyModules().filter((w) => w.published && !w.deleted).sort((a, b) => a.sortOrder - b.sortOrder);
   const today = new Date();
+  const allPublished = getWeeklyModules().filter((w) => w.published && !w.deleted).sort((a, b) => a.sortOrder - b.sortOrder);
+  const activeWeeklyModules = allPublished.filter((wm) => {
+    if (!wm.startDate && !wm.endDate) return true;
+    const start = wm.startDate ? new Date(wm.startDate) : null;
+    const end = wm.endDate ? new Date(wm.endDate) : null;
+    if (start && today < start) return false;
+    if (end && today > end) return false;
+    return true;
+  });
 
   function openLinkedScenario(practiceId: string) {
-    const item = practiceItems.find((p) => p.id === practiceId);
-    if (item) requireAuth(() => { setScenarioItem(item); setPage("scenario"); });
+    const found = practiceId === "misinfo-week" ? misinfoThisWeekItem : practiceItems.find((p) => p.id === practiceId);
+    if (found) requireAuth(() => { setScenarioItem(found); setPage("scenario"); });
   }
+
+  const misinfoWeekDone = state.completedPractices.includes("misinfo-week");
 
   return (
     <div className="page-wrap">
@@ -891,29 +883,40 @@ function WeeklyPage({ state, setPage, setScenarioItem, requireAuth }: {
         <p>Curated media literacy topics updated each week to match current events in Australian politics and elections.</p>
       </div>
 
-      {weeklyModules.length === 0 ? (
-        <div className="empty-state"><div className="e-icon">📅</div><strong>No weekly content yet.</strong><p>Check back soon — the admin team publishes new topics weekly.</p></div>
+      {/* Week 1 baseline — always shown */}
+      <div className="card" style={{ borderLeft: "4px solid #7c3aed" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+          <div>
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "#7c3aed", marginBottom: "0.2rem" }}>Week 1 · Baseline</div>
+            <h3 style={{ fontWeight: 800, fontSize: "1.05rem", margin: 0 }}>Misinfo This Week</h3>
+          </div>
+          <span style={{ padding: "3px 10px", borderRadius: "999px", background: "#dcfce7", color: "#166534", fontSize: "0.75rem", fontWeight: 700 }}>Active</span>
+        </div>
+        <p style={{ fontSize: "0.87rem", color: "var(--text-muted)", marginBottom: "0.65rem" }}>A real-world misinformation scenario drawn from Australian election content — practise your 3-step analysis.</p>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <button
+            onClick={() => openLinkedScenario("misinfo-week")}
+            style={{ padding: "0.5rem 0.85rem", borderRadius: 8, border: `1.5px solid ${misinfoWeekDone ? "#86efac" : "var(--border)"}`, background: misinfoWeekDone ? "#f0fdf4" : "white", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer", color: misinfoWeekDone ? "#166534" : "var(--text)" }}
+          >
+            {misinfoWeekDone ? "✓ " : ""}The "Pencil-Gate" Theory
+          </button>
+        </div>
+      </div>
+
+      {activeWeeklyModules.length === 0 ? (
+        <div className="empty-state"><div className="e-icon">📅</div><strong>No additional weekly content this week.</strong><p>Check back soon — the admin team publishes new topics weekly.</p></div>
       ) : (
-        weeklyModules.map((wm) => {
-          const isActive = (() => {
-            if (!wm.startDate && !wm.endDate) return true;
-            const start = wm.startDate ? new Date(wm.startDate) : null;
-            const end = wm.endDate ? new Date(wm.endDate) : null;
-            if (start && today < start) return false;
-            if (end && today > end) return false;
-            return true;
-          })();
+        activeWeeklyModules.map((wm) => {
           const linkedItems = practiceItems.filter((p) => (wm.linkedQuestions || []).includes(p.id));
 
           return (
-            <div key={wm.id} className="card" style={{ borderLeft: `4px solid ${wm.color || "var(--primary)"}`, opacity: isActive ? 1 : 0.6 }}>
+            <div key={wm.id} className="card" style={{ borderLeft: `4px solid ${wm.color || "var(--primary)"}` }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
                 <div>
                   <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: wm.color || "var(--primary)", marginBottom: "0.2rem" }}>{wm.label}</div>
                   <h3 style={{ fontWeight: 800, fontSize: "1.05rem", margin: 0 }}>{wm.title}</h3>
                 </div>
-                {!isActive && <span style={{ padding: "3px 10px", borderRadius: "999px", background: "#f3f4f6", color: "#6b7280", fontSize: "0.75rem", fontWeight: 700 }}>Upcoming</span>}
-                {isActive && <span style={{ padding: "3px 10px", borderRadius: "999px", background: "#dcfce7", color: "#166534", fontSize: "0.75rem", fontWeight: 700 }}>Active</span>}
+                <span style={{ padding: "3px 10px", borderRadius: "999px", background: "#dcfce7", color: "#166534", fontSize: "0.75rem", fontWeight: 700 }}>Active</span>
               </div>
 
               <p style={{ fontSize: "0.87rem", color: "var(--text-muted)", marginBottom: "0.65rem" }}>{wm.description}</p>
@@ -936,15 +939,15 @@ function WeeklyPage({ state, setPage, setScenarioItem, requireAuth }: {
                 <>
                   <div style={{ fontWeight: 700, fontSize: "0.82rem", marginBottom: "0.45rem", color: "var(--text)" }}>Related Practice Scenarios</div>
                   <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    {linkedItems.map((item) => {
-                      const done = state.completedPractices.includes(item.id);
+                    {linkedItems.map((it) => {
+                      const done = state.completedPractices.includes(it.id);
                       return (
                         <button
-                          key={item.id}
-                          onClick={() => openLinkedScenario(item.id)}
+                          key={it.id}
+                          onClick={() => openLinkedScenario(it.id)}
                           style={{ padding: "0.5rem 0.85rem", borderRadius: 8, border: `1.5px solid ${done ? "#86efac" : "var(--border)"}`, background: done ? "#f0fdf4" : "white", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer", color: done ? "#166534" : "var(--text)" }}
                         >
-                          {done ? "✓ " : ""}{item.label}
+                          {done ? "✓ " : ""}{it.label}
                         </button>
                       );
                     })}
@@ -952,7 +955,7 @@ function WeeklyPage({ state, setPage, setScenarioItem, requireAuth }: {
                 </>
               )}
 
-              {wm.startDate && (
+              {(wm.startDate || wm.endDate) && (
                 <div style={{ marginTop: "0.75rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
                   {wm.startDate && `From ${new Date(wm.startDate).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}`}
                   {wm.endDate && ` · Until ${new Date(wm.endDate).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}`}
