@@ -22,7 +22,7 @@ function CardModal({ card, onSave, onClose }: { card: EditCard; onSave: (c: Edit
         ].map((f) => (
           <div key={f.key} style={{ marginBottom: 14 }}>
             <label style={lbl}>{f.label} *</label>
-            <textarea rows={f.rows} value={(form as Record<string, string>)[f.key]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} style={{ ...inp, resize: "vertical" }} />
+            <textarea rows={f.rows} value={(form as unknown as Record<string, string>)[f.key]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} style={{ ...inp, resize: "vertical" }} />
           </div>
         ))}
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 10 }}>
@@ -146,5 +146,5 @@ export default function Modules() {
 
 const lbl: React.CSSProperties = { display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#374151", marginBottom: 5 };
 const inp: React.CSSProperties = { width: "100%", padding: "8px 10px", borderRadius: 7, border: "1.5px solid #e8eaed", fontSize: "0.85rem", outline: "none", background: "#fff" };
-const primaryBtn: React.CSSProperties = { background: "#1e4fa8", color: "#fff", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" };
+const primaryBtn: React.CSSProperties = { background: "#0d9488", color: "#fff", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" };
 const outlineBtn: React.CSSProperties = { background: "#fff", color: "#374151", border: "1px solid #e8eaed", borderRadius: 7, padding: "8px 16px", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" };

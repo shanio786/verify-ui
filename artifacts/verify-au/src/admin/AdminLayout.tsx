@@ -10,14 +10,14 @@ interface Props {
 }
 
 const navItems: { id: AdminPage; label: string; icon: string }[] = [
-  { id: "dashboard", label: "Dashboard", icon: "⊞" },
-  { id: "users", label: "Users", icon: "👤" },
-  { id: "modules", label: "Modules & Cards", icon: "📚" },
-  { id: "practice", label: "Practice Questions", icon: "◎" },
-  { id: "assessments", label: "Assessments", icon: "📝" },
-  { id: "weekly", label: "Weekly Modules", icon: "📅" },
-  { id: "analytics", label: "Analytics", icon: "📊" },
-  { id: "auditlogs", label: "Audit Logs", icon: "🔍" },
+  { id: "dashboard",   label: "Dashboard",         icon: "▣" },
+  { id: "users",       label: "Users",              icon: "◉" },
+  { id: "modules",     label: "Modules & Cards",   icon: "≡" },
+  { id: "practice",    label: "Practice Questions", icon: "□" },
+  { id: "assessments", label: "Assessments",        icon: "✓" },
+  { id: "weekly",      label: "Weekly Modules",     icon: "◷" },
+  { id: "analytics",   label: "Analytics",          icon: "▦" },
+  { id: "auditlogs",   label: "Audit Logs",         icon: "⊟" },
 ];
 
 export default function AdminLayout({ page, setPage, children, onLogout }: Props) {
