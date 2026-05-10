@@ -123,7 +123,8 @@ export default function PracticeQuestions() {
           <tbody>
             {paged.map((item, i) => {
               const absIdx = (page - 1) * PER_PAGE + i + 1;
-              const verdictColor: Record<string, string> = { True: "#16a34a", False: "#dc2626", Misleading: "#d97706", Unsupported: "#7c3aed" };
+              const VERDICTS: Record<string, string> = { True: "#16a34a", False: "#dc2626", Misleading: "#d97706", Unsupported: "#7c3aed" };
+              const isStd = item.q2Verdict in VERDICTS;
               return (
                 <tr key={item.id} style={{ borderBottom: i < paged.length - 1 ? "1px solid #f3f4f6" : "none", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                   <td style={{ padding: "10px 14px", fontSize: "0.75rem", color: "#9ca3af", fontWeight: 600 }}>{absIdx}</td>
@@ -136,12 +137,11 @@ export default function PracticeQuestions() {
                     <div style={{ fontSize: "0.74rem", color: "#6b7280", lineHeight: 1.4 }}>{item.contextText.slice(0, 40)}{item.contextText.length > 40 ? "…" : ""}</div>
                   </td>
                   <td style={{ padding: "10px 14px" }}>
-                    <span style={{
-                      fontSize: "0.7rem", fontWeight: 800, padding: "3px 8px", borderRadius: 20,
-                      color: verdictColor[item.q2Verdict] || "#374151",
-                      background: (verdictColor[item.q2Verdict] || "#374151") + "18",
-                      border: `1px solid ${(verdictColor[item.q2Verdict] || "#e8eaed")}55`,
-                    }}>{item.q2Verdict}</span>
+                    {isStd ? (
+                      <span style={{ fontSize: "0.7rem", fontWeight: 800, padding: "3px 8px", borderRadius: 20, color: VERDICTS[item.q2Verdict], background: VERDICTS[item.q2Verdict] + "18", border: `1px solid ${VERDICTS[item.q2Verdict]}55` }}>{item.q2Verdict}</span>
+                    ) : (
+                      <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "3px 8px", borderRadius: 20, color: "#64748b", background: "#f1f5f9", border: "1px solid #e2e8f0" }}>Method Q</span>
+                    )}
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
