@@ -558,11 +558,9 @@ function ScenarioPage({ item, state, setState, setPage, scenarioBack }: {
     const q3C = selected.length === correct.length && selected.every((v, i) => v === correct[i]);
     const q1C = q1Ans === item.q1Correct;
     const q2C = q2Ans === item.q2Correct;
-    if (item.id !== "misinfo-week") {
-      const newCompleted = state.completedPractices.includes(item.id) ? state.completedPractices : [...state.completedPractices, item.id];
-      const newState = addActivity({ ...state, completedPractices: newCompleted, practiceResults: { ...state.practiceResults, [item.id]: { q1: q1C, q2: q2C, q3: q3C } } }, `Completed scenario: ${item.title.split("'")[0]}`);
-      setState(newState);
-    }
+    const newCompleted = state.completedPractices.includes(item.id) ? state.completedPractices : [...state.completedPractices, item.id];
+    const newState = addActivity({ ...state, completedPractices: newCompleted, practiceResults: { ...state.practiceResults, [item.id]: { q1: q1C, q2: q2C, q3: q3C } } }, `Completed scenario: ${item.title.split("'")[0]}`);
+    setState(newState);
     setTimeout(() => setStep(4), 400);
   }
 
@@ -714,13 +712,40 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
     { emoji: "📊", name: "Data Analyst", earned: (state.keyCheckPassed || []).includes(4), desc: "Module 5 key check passed" },
     { emoji: "🎓", name: "Full Curriculum", earned: allKeyChecksDone, desc: "All 5 key checks passed" },
     { emoji: "🏋️", name: "Practice Set", earned: practiceSetEarned, desc: "All 50 practice scenarios fully correct" },
+    { emoji: "🎯", name: "Post-test Taken", earned: state.selfAssessments.final.completed, desc: "Final assessment completed" },
     { emoji: "📈", name: "Growth Champion", earned: growthPoints !== null && growthPoints > 0, desc: "Post-test score beats pre-test score" },
   ];
   const earnedCount = badges.filter((b) => b.earned).length;
 
+  const nextAction: { label: string; cta: string; page: Page } | null = (() => {
+    if (!state.selfAssessments.initial.completed) return { label: "Start here: take the initial self-assessment to set your baseline.", cta: "Take Initial Assessment", page: "assessment-pre" };
+    const nextModule = moduleData.findIndex((_, i) => !(state.keyCheckPassed || []).includes(i));
+    if (nextModule !== -1) return { label: `Next: pass the Key Check for Module ${nextModule + 1} — ${moduleData[nextModule].title}.`, cta: "Go to Learning", page: "learning" };
+    if (!state.selfAssessments.final.completed) return { label: "You've passed all Key Checks! Take the final assessment to measure your growth.", cta: "Take Final Assessment", page: "assessment-post" };
+    if (!practiceSetEarned) return { label: "Keep practising — complete and score 100% on all 50 scenarios to earn Practice Set.", cta: "Go to Practice", page: "practice" };
+    return null;
+  })();
+
   return (
     <div className="page-wrap">
       <h1 style={{ fontSize: "1.55rem", fontWeight: 800, marginBottom: "1.1rem" }}>My Progress</h1>
+
+      {/* Next-action prompt */}
+      {nextAction ? (
+        <div className="alert alert-yellow" style={{ marginBottom: "1.1rem" }}>
+          <span style={{ fontSize: "1.1rem" }}>👉</span>
+          <div>
+            <strong>What to do next</strong>
+            <p style={{ margin: "0.2rem 0 0.5rem", fontSize: "0.87rem" }}>{nextAction.label}</p>
+            <button className="btn btn-primary btn-sm" onClick={() => setPage(nextAction.page)}>{nextAction.cta}</button>
+          </div>
+        </div>
+      ) : (
+        <div className="alert alert-green" style={{ marginBottom: "1.1rem" }}>
+          <span>🏆</span>
+          <span><strong>All done!</strong> You've completed the full curriculum, taken both assessments, and mastered all practice scenarios. Excellent work!</span>
+        </div>
+      )}
 
       {/* Profile + stats */}
       <div className="grid-2">
