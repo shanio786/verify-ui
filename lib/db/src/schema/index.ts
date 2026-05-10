@@ -67,7 +67,7 @@ export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, 
 export const insertProgressSchema = createInsertSchema(studentProgressTable).omit({ id: true, updatedAt: true });
 
 export type User = typeof usersTable.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertUser = any;
 export type Session = typeof sessionsTable.$inferSelect;
 export type StudentProgress = typeof studentProgressTable.$inferSelect;
 export type WeeklyModule = typeof weeklyModulesTable.$inferSelect;

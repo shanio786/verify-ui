@@ -33,7 +33,7 @@ router.post("/users", requireAdmin, async (req, res) => {
 });
 
 router.put("/users/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   const { name, email, role, status, password } = req.body;
   const data: any = {};
   if (name) data.name = name;
@@ -46,7 +46,7 @@ router.put("/users/:id", requireAdmin, async (req, res) => {
 });
 
 router.delete("/users/:id", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id as string);
   await db.update(schema.usersTable).set({ status: "Inactive" }).where(eq(schema.usersTable.id, id));
   res.json({ ok: true });
 });
@@ -84,12 +84,12 @@ router.put("/weekly/:id", requireAdmin, async (req, res) => {
   if (linkedQuestions !== undefined) data.linkedQuestions = linkedQuestions;
   if (sortOrder !== undefined) data.sortOrder = sortOrder;
   if (published !== undefined) data.published = published;
-  const [mod] = await db.update(schema.weeklyModulesTable).set(data).where(eq(schema.weeklyModulesTable.id, req.params.id)).returning();
+  const [mod] = await db.update(schema.weeklyModulesTable).set(data).where(eq(schema.weeklyModulesTable.id, req.params.id as string)).returning();
   res.json(mod);
 });
 
 router.delete("/weekly/:id", requireAdmin, async (req, res) => {
-  await db.update(schema.weeklyModulesTable).set({ deleted: true }).where(eq(schema.weeklyModulesTable.id, req.params.id));
+  await db.update(schema.weeklyModulesTable).set({ deleted: true }).where(eq(schema.weeklyModulesTable.id, req.params.id as string));
   res.json({ ok: true });
 });
 
