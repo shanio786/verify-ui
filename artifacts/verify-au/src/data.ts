@@ -1436,7 +1436,57 @@ export const practiceItems: PracticeItem[] = [
 ];
 
 
-export const selfSkillsAssessmentData: { initial: AssessSection; final: AssessSection } = {
+export interface WeeklyItem {
+  id: string;
+  week: number;
+  label: string;
+  title: string;
+  description: string;
+  tag: string;
+  color: string;
+  practiceId: string;
+  startDate: string;
+  endDate: string;
+  permanent?: boolean;
+}
+
+export const weeklyItems: WeeklyItem[] = [
+  {
+    id: 'week-1', week: 1, label: 'Week 1 · Permanent',
+    title: 'The "Pencil-Gate" Theory',
+    description: 'Claims that AEC pencils allow officials to secretly erase and change votes keep resurfacing. Practice identifying this classic conspiracy claim.',
+    tag: 'counting', color: '#e0eeff', practiceId: 'misinfo-week',
+    startDate: '2025-01-01', endDate: '2099-12-31', permanent: true,
+  },
+  {
+    id: 'week-2', week: 2, label: 'Week 2 · May 4–10, 2026',
+    title: 'Six Million Missing Ballots',
+    description: 'A viral post claimed six million ballot papers went missing in the 2025 federal election. Spot the misleading use of early tally data.',
+    tag: 'counting', color: '#fce4ec', practiceId: 'practice-10',
+    startDate: '2026-05-04', endDate: '2026-05-10',
+  },
+  {
+    id: 'week-3', week: 3, label: 'Week 3 · May 11–17, 2026',
+    title: 'Vote of No Confidence',
+    description: 'Posts claim writing "no suitable candidate" on your ballot sends a legal protest message and can trigger a re-run. Identify the mechanism.',
+    tag: 'voting', color: '#e8f5e9', practiceId: 'practice-19',
+    startDate: '2026-05-11', endDate: '2026-05-17',
+  },
+  {
+    id: 'week-4', week: 4, label: 'Week 4 · Apr 27 – May 3, 2026',
+    title: 'Are Your Preferences Controlled?',
+    description: 'Claims that voting for a minor party "wastes" your vote resurface every election cycle. Practice spotting this misrepresentation of preferential voting.',
+    tag: 'preferential voting', color: '#fff3e0', practiceId: 'practice-11',
+    startDate: '2026-04-27', endDate: '2026-05-03',
+  },
+  {
+    id: 'week-5', week: 5, label: 'Week 5 · May 18–24, 2026',
+    title: 'Deepfakes in the 2025 Election',
+    description: 'AI-generated video of a candidate "admitting" extreme policies went viral. Learn to identify synthetic media used as disinformation.',
+    tag: 'AI content', color: '#f3e5f5', practiceId: 'practice-08',
+    startDate: '2026-05-18', endDate: '2026-05-24',
+  },
+];: { initial: AssessSection; final: AssessSection } = {
   initial: {
     title: 'Initial Self-Skills Assessment',
     intro: 'This guided self-check uses 20 short scenarios about Australian elections to help you understand your current civic knowledge and reasoning skills before starting the learning modules.',

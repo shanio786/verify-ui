@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
-import { moduleData, practiceItems, selfSkillsAssessmentData, misinfoThisWeekItem, MECHANISM_OPTIONS } from "./data";
-import type { PracticeItem, AssessItem } from "./data";
+import { moduleData, practiceItems, selfSkillsAssessmentData, misinfoThisWeekItem, MECHANISM_OPTIONS, weeklyItems } from "./data";
+import type { PracticeItem, AssessItem, WeeklyItem } from "./data";
 
 // Maps each practice scenario to the primary mechanism/tactic from the 5 modules (0-4)
 const MECHANISM_ANSWERS: Record<string, number> = {
@@ -19,9 +19,16 @@ const MECHANISM_ANSWERS: Record<string, number> = {
   'practice-49': 3, 'practice-50': 0,
 };
 
-type Page = "learning" | "practice" | "me" | "lesson" | "scenario" | "assessment-pre" | "assessment-post";
+type Page = "learning" | "practice" | "me" | "lesson" | "scenario" | "assessment-pre" | "assessment-post" | "weekly";
 
 interface User { name: string; email: string; joinedAt: string; }
+
+interface ActivityEntry { label: string; ts: string; }
+
+function addActivity(s: AppState, label: string): AppState {
+  const entry: ActivityEntry = { label, ts: new Date().toISOString() };
+  return { ...s, recentActivity: [entry, ...(s.recentActivity ?? [])].slice(0, 10) };
+}
 
 function loadUser(): User | null {
   try {
@@ -48,8 +55,9 @@ function saveRegistry(r: Record<string, User>) {
 }
 
 interface AppState {
-  completedModules: number[];       // modules where Key Check is passed
+  completedModules: number[];
   moduleNeedsReview: number[];
+  startedModules: number[];
   completedPractices: string[];
   practiceResults: Record<string, { q1: boolean; q2: boolean; q3: boolean }>;
   currentModule: number;
@@ -59,6 +67,7 @@ interface AppState {
   posttestScore: number | null;
   completedPretest: boolean;
   posttestUnlocked: boolean;
+  recentActivity: ActivityEntry[];
   selfAssessments: {
     initial: { currentIndex: number; answers: (number | null)[]; completed: boolean };
     final: { currentIndex: number; answers: (number | null)[]; completed: boolean };
@@ -68,6 +77,7 @@ interface AppState {
 const defaultState: AppState = {
   completedModules: [],
   moduleNeedsReview: [],
+  startedModules: [],
   completedPractices: [],
   practiceResults: {},
   currentModule: 0,
@@ -77,6 +87,7 @@ const defaultState: AppState = {
   posttestScore: null,
   completedPretest: false,
   posttestUnlocked: false,
+  recentActivity: [],
   selfAssessments: {
     initial: { currentIndex: 0, answers: [], completed: false },
     final: { currentIndex: 0, answers: [], completed: false },
@@ -85,14 +96,14 @@ const defaultState: AppState = {
 
 function loadState(): AppState {
   try {
-    const raw = localStorage.getItem("verifyAuState_v3");
+    const raw = localStorage.getItem("verifyAuState_v4");
     if (raw) return { ...defaultState, ...JSON.parse(raw) };
   } catch {}
   return { ...defaultState };
 }
 
 function saveState(s: AppState) {
-  try { localStorage.setItem("verifyAuState_v3", JSON.stringify(s)); } catch {}
+  try { localStorage.setItem("verifyAuState_v4", JSON.stringify(s)); } catch {}
 }
 
 const moduleIcons = ["🔍", "🎭", "😤", "🍒", "📊"];
@@ -415,7 +426,8 @@ function KeyCheckQuiz({ modIdx, state, setState, setPage }: {
   function pass() {
     const newDone = state.completedModules.includes(modIdx)
       ? state.completedModules : [...state.completedModules, modIdx];
-    setState({ ...state, completedModules: newDone, posttestUnlocked: newDone.length === moduleData.length });
+    const next = { ...state, completedModules: newDone, posttestUnlocked: newDone.length === moduleData.length };
+    setState(addActivity(next, `✅ Passed Key Check: ${mod.title}`));
     setPage("learning");
   }
 
