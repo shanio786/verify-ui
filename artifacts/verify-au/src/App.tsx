@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { moduleData, practiceItems, selfSkillsAssessmentData, misinfoThisWeekItem } from "./data";
 import { getWeeklyModules } from "./admin/adminStore";
 import type { PracticeItem, AssessItem } from "./data";
@@ -722,6 +722,7 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
     { emoji: "📊", name: "Data Analyst", earned: (state.keyCheckPassed || []).includes(4), desc: "Module 5 key check passed" },
     { emoji: "🎓", name: "Full Curriculum", earned: allKeyChecksDone, desc: "All 5 key checks passed" },
     { emoji: "🏋️", name: "Practice Set", earned: practiceSetEarned, desc: "All 50 practice scenarios fully correct" },
+    { emoji: "🎯", name: "Post-test Taken", earned: state.selfAssessments.final.completed, desc: "Final assessment completed" },
     { emoji: "📈", name: "Growth Champion", earned: growthPoints !== null && growthPoints > 0, desc: "Post-test score beats pre-test score" },
   ];
   const earnedCount = badges.filter((b) => b.earned).length;
@@ -1188,14 +1189,24 @@ export default function App() {
     saveTimer.current = setTimeout(() => saveState(s), 300);
   }
 
-  function navigateTo(p: Page) {
-    const trackable = ["learning", "lesson", "practice", "weekly", "assessment-pre", "assessment-post"];
-    if (trackable.includes(p)) setState({ ...state, lastPage: p });
-    setPage(p);
-  }
+  useEffect(() => {
+    const trackable = ["learning", "lesson", "practice", "weekly", "assessment-pre", "assessment-post", "scenario"];
+    if (trackable.includes(page)) {
+      const lp = page === "scenario" ? (scenarioBack as string) : page;
+      setStateRaw((prev) => {
+        if (prev.lastPage === lp) return prev;
+        const next = { ...prev, lastPage: lp };
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => saveState(next), 300);
+        return next;
+      });
+    }
+  }, [page, scenarioBack]);
+
+  function navigateTo(p: Page) { setPage(p); }
 
   function openScenario(item: PracticeItem, back: "learning" | "practice" | "weekly" = "practice") {
-    setState({ ...state, lastPage: back }); setScenarioItem(item); setScenarioBack(back); setPage("scenario");
+    setScenarioItem(item); setScenarioBack(back); setPage("scenario");
   }
 
   function requireAuth(action: () => void) {
