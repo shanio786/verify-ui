@@ -44,44 +44,59 @@ const APP_STATES_KEY = "vau_states";
 
 function seedUsers(): AdminUser[] {
   return [
-    { id: "1", name: "Super Admin", email: "admin@factcheck.au", role: "SUPER ADMIN", status: "Active", createdAt: "2026-01-01", lastLogin: "2026-05-09" },
-    { id: "2", name: "IT Tech", email: "it@factcheck.au", role: "IT TECH", status: "Active", createdAt: "2026-01-05", lastLogin: "2026-05-10" },
-    { id: "3", name: "Content Editor", email: "editor@factcheck.au", role: "CONTENT EDITOR", status: "Active", createdAt: "2026-02-01", lastLogin: undefined },
-    { id: "4", name: "Alice Student", email: "student1@example.com", role: "STUDENT", status: "Active", createdAt: "2026-03-10", lastLogin: "2026-05-07" },
-    { id: "5", name: "Bob Student", email: "student2@example.com", role: "STUDENT", status: "Active", createdAt: "2026-04-01", lastLogin: "2026-05-09" },
+    { id: "1", name: "Platform Admin", email: "admin@verifyau.edu.au", role: "SUPER ADMIN", status: "Active", createdAt: "2026-01-15", lastLogin: "2026-05-10" },
+    { id: "2", name: "Tech Manager", email: "tech@verifyau.edu.au", role: "IT TECH", status: "Active", createdAt: "2026-01-20", lastLogin: "2026-05-10" },
+    { id: "3", name: "Content Lead", email: "content@verifyau.edu.au", role: "CONTENT EDITOR", status: "Active", createdAt: "2026-02-10", lastLogin: "2026-05-08" },
+    { id: "4", name: "Jordan M.", email: "jordan.m@uni.edu.au", role: "STUDENT", status: "Active", createdAt: "2026-03-12", lastLogin: "2026-05-07" },
+    { id: "5", name: "Riley K.", email: "riley.k@uni.edu.au", role: "STUDENT", status: "Active", createdAt: "2026-04-02", lastLogin: "2026-05-09" },
+    { id: "6", name: "Sam T.", email: "sam.t@uni.edu.au", role: "STUDENT", status: "Active", createdAt: "2026-04-15", lastLogin: "2026-05-06" },
+    { id: "7", name: "Alex W.", email: "alex.w@uni.edu.au", role: "STUDENT", status: "Inactive", createdAt: "2026-04-20", lastLogin: undefined },
   ];
 }
 
 function seedWeeklyModules(): WeeklyModule[] {
   return [
     {
-      id: "wm-1", label: "Week 1 — May 2026", title: "2025 Federal Budget: Claims in the Wild",
-      description: "Apply your media literacy skills to real statements made during the 2025 Federal Budget response.",
-      context: "Following Treasurer Jim Chalmers' Budget night speech on 13 May 2025, opposition leaders and government ministers made numerous claims about spending, tax, and economic impact.",
-      color: "#5B21B6", tags: ["Emotional Framing", "Claim Identification", "Selective Evidence"],
-      linkedQuestions: ["practice-01", "practice-05"], sortOrder: 0, published: true,
+      id: "wm-1", label: "Week 1 — May 2026", title: "Election Claims Under the Microscope",
+      description: "Apply your media literacy skills to real statements made during the 2025 federal election campaign.",
+      context: "The 2025 federal election generated hundreds of claims across social media, campaign ads, and media appearances. This week we examine the most viral.",
+      color: "#0d9488", tags: ["Claim Identification", "Selective Evidence", "Misleading Statistics"],
+      linkedQuestions: ["practice-01", "practice-03"], sortOrder: 0, published: true,
     },
     {
-      id: "wm-2", label: "Week 2 — May 2026", title: "Referendum Anniversary: Revisiting the Claims",
-      description: "Two years on from the Voice referendum, revisit the most viral claims and assess how they held up.",
-      context: "The 2023 Voice to Parliament referendum generated significant online misinformation. This week examines key claims from both sides.",
-      color: "#065F46", tags: ["False Authority", "Misleading Statistics"],
-      linkedQuestions: ["practice-03", "practice-06"], sortOrder: 1, published: true,
+      id: "wm-2", label: "Week 2 — May 2026", title: "Voting Myths & Electoral Misinformation",
+      description: "Examine the most common false claims about how Australian voting works — from preferences to ballot papers.",
+      context: "The AEC fact-checked dozens of viral claims about voting procedures in 2025. This week focuses on the most widely shared.",
+      color: "#7c3aed", tags: ["Claim Identification", "Emotional Framing"],
+      linkedQuestions: ["practice-07", "practice-09"], sortOrder: 1, published: true,
     },
   ];
 }
 
 function seedAuditLogs(): AuditLog[] {
   const logs: AuditLog[] = [];
-  const now = new Date("2026-05-09T18:41:00");
-  const actions = ["PRACTICE_CREATED", "PRACTICE_UPDATED", "MODULE_CREATED", "USER_CREATED"];
-  const entities = practiceItems.slice(0, 12).map((p, i) => ({ name: `PracticeQuestion #${36 - i}`, action: i === 2 ? "PRACTICE_UPDATED" : "PRACTICE_CREATED" }));
-  entities.forEach((e, i) => {
-    const t = new Date(now.getTime() - i * 3 * 60000);
+  const now = new Date("2026-05-10T09:15:00");
+  const entries = [
+    { action: "PRACTICE_CREATED", entity: "PracticeQuestion #36 — Labor $80B defence claim" },
+    { action: "PRACTICE_CREATED", entity: "PracticeQuestion #35 — Bulk-billing Medicare claim" },
+    { action: "PRACTICE_UPDATED", entity: "PracticeQuestion #34 — GP free visits claim" },
+    { action: "ASSESSMENT_CREATED", entity: "AssessmentQuestion #18 — 710k new voters" },
+    { action: "ASSESSMENT_CREATED", entity: "AssessmentQuestion #17 — Menzies redistribution" },
+    { action: "MODULE_UPDATED", entity: "Module 01 — Claim Identification" },
+    { action: "PRACTICE_CREATED", entity: "PracticeQuestion #21 — Menzies redraw" },
+    { action: "PRACTICE_CREATED", entity: "PracticeQuestion #20 — Adelaide independents" },
+    { action: "USER_CREATED", entity: "Student: jordan.m@uni.edu.au" },
+    { action: "PRACTICE_CREATED", entity: "PracticeQuestion #19 — 72-hour ban claim" },
+    { action: "MODULE_UPDATED", entity: "Module 05 — Misleading Statistics" },
+    { action: "USER_CREATED", entity: "Student: riley.k@uni.edu.au" },
+  ];
+  entries.forEach((e, i) => {
+    const t = new Date(now.getTime() - i * 4 * 60000);
     logs.push({
-      id: String(i + 1), time: t.toLocaleString("en-AU", { month: "numeric", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
-      actor: "Super Admin", actorEmail: "admin@factcheck.au",
-      action: e.action, entity: e.name, ip: "100.64.0.6",
+      id: String(i + 1),
+      time: t.toLocaleString("en-AU", { month: "numeric", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }),
+      actor: "Platform Admin", actorEmail: "admin@verifyau.edu.au",
+      action: e.action, entity: e.entity, ip: "203.12.160." + (i + 1),
     });
   });
   return logs;
@@ -177,7 +192,7 @@ export function getAppStats() {
 export function getModuleEngagement() {
   const statesRaw = localStorage.getItem(APP_STATES_KEY);
   return moduleData.map((mod, idx) => {
-    let completions = 0, keyCheckAttempts = 0;
+    let completions = 0;
     if (statesRaw) {
       try {
         const states: Record<string, { completedModules?: number[] }> = JSON.parse(statesRaw);
@@ -187,6 +202,6 @@ export function getModuleEngagement() {
       } catch {}
     }
     const totalUsers = getAllUsers().filter((u) => u.role === "STUDENT").length || 1;
-    return { name: mod.title, label: mod.label, completions, completionRate: Math.round((completions / totalUsers) * 100), keyCheckAttempts, passRate: completions > 0 ? 48 : 0, avgScore: completions > 0 ? 48 : 0 };
+    return { name: mod.title, label: mod.label, completions, completionRate: Math.round((completions / totalUsers) * 100), avgScore: completions > 0 ? 62 : 0 };
   });
 }
