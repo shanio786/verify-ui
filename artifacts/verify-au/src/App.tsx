@@ -414,7 +414,7 @@ function LessonPage({ state, setState, setPage }: {
             if (kcConfirmed[kcQ]) {
               const isUserAnswer = kcAnswers[kcQ] === i;
               const isCorrect = i === mod.keyCheckQuestions[kcQ].correct;
-              if (isCorrect) cls += " correct";
+              if (isUserAnswer && isCorrect) cls += " correct";
               else if (isUserAnswer && !isCorrect) cls += " incorrect";
             } else if (kcAnswers[kcQ] === i) cls += " selected";
             return <button key={i} className={cls} onClick={() => kcSelectAnswer(i)} disabled={kcConfirmed[kcQ]}>{opt}</button>;
@@ -701,7 +701,7 @@ function ScenarioPage({ item, state, setState, setPage, fromMisinfo }: {
 }
 
 // ─── ME PAGE ───────────────────────────────────────────────────────────────
-function MePage({ state, setPage, user, onLogout }: { state: AppState; setPage: (p: Page) => void; user: User; onLogout: () => void }) {
+function MePage({ state, setState, setPage, user, onLogout }: { state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void; user: User; onLogout: () => void }) {
   const totalPracticed = state.completedPractices.length;
   const keyCheckCount = (state.keyCheckPassed || []).length;
   const allKeyChecksDone = keyCheckCount === moduleData.length;
@@ -718,6 +718,12 @@ function MePage({ state, setPage, user, onLogout }: { state: AppState; setPage: 
   const continueModule = state.lastLearningModule !== null && !(state.keyCheckPassed || []).includes(state.lastLearningModule)
     ? state.lastLearningModule : null;
 
+  const practiceSetEarned = state.completedPractices.length > 0 &&
+    state.completedPractices.every((id) => {
+      const r = state.practiceResults[id];
+      return r && r.q1 && r.q2 && r.q3 === true;
+    });
+
   const badges = [
     { emoji: "📋", name: "Baseline Set", earned: state.selfAssessments.initial.completed, desc: "Initial assessment complete" },
     { emoji: "🔍", name: "Claim Spotter", earned: (state.keyCheckPassed || []).includes(0), desc: "Module 1 key check passed" },
@@ -725,8 +731,8 @@ function MePage({ state, setPage, user, onLogout }: { state: AppState; setPage: 
     { emoji: "😤", name: "Calm Reader", earned: (state.keyCheckPassed || []).includes(2), desc: "Module 3 key check passed" },
     { emoji: "🍒", name: "Cherry Picker", earned: (state.keyCheckPassed || []).includes(3), desc: "Module 4 key check passed" },
     { emoji: "📊", name: "Data Analyst", earned: (state.keyCheckPassed || []).includes(4), desc: "Module 5 key check passed" },
-    { emoji: "🎓", name: "Full Curriculum", earned: allKeyChecksDone, desc: "All 5 key checks passed" },
-    { emoji: "🏋️", name: "Practice Set", earned: allCorrectCount >= 10, desc: "10+ scenarios fully correct" },
+    { emoji: "🏋️", name: "Practice Set", earned: practiceSetEarned, desc: "All practiced scenarios fully correct" },
+    { emoji: "🎯", name: "Post-test Taken", earned: state.selfAssessments.final.completed, desc: "Final assessment completed" },
     { emoji: "📈", name: "Growth Champion", earned: growthPoints !== null && growthPoints > 0, desc: "Post-test beats pre-test" },
   ];
   const earnedCount = badges.filter((b) => b.earned).length;
@@ -755,7 +761,10 @@ function MePage({ state, setPage, user, onLogout }: { state: AppState; setPage: 
             <div style={{ marginTop: "0.85rem", padding: "0.7rem", background: "var(--primary-light)", borderRadius: 8, border: "1.5px solid #93c5fd" }}>
               <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", marginBottom: "0.25rem" }}>Continue where you left off</div>
               <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: "0.4rem" }}>{moduleData[continueModule].title}</div>
-              <button className="btn btn-primary btn-sm" onClick={() => setPage("lesson")}>Resume →</button>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.4rem" }}>
+                {(state.completedModules || []).includes(continueModule) ? "Ready for Key Check" : `Card ${state.currentCard + 1} of ${moduleData[continueModule].cards.length}`}
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={() => { setState({ ...state, currentModule: continueModule, lastLearningModule: continueModule }); setPage("lesson"); }}>Resume →</button>
             </div>
           )}
         </div>
@@ -898,7 +907,7 @@ function WeeklyPage({ state, setPage, setScenarioItem, requireAuth }: {
 
           return (
             <div key={wm.id} className="card" style={{ borderLeft: `4px solid ${wm.color || "var(--primary)"}`, opacity: isActive ? 1 : 0.6 }}>
-              <div style={{ display: "flex", align: "items-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
                 <div>
                   <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: wm.color || "var(--primary)", marginBottom: "0.2rem" }}>{wm.label}</div>
                   <h3 style={{ fontWeight: 800, fontSize: "1.05rem", margin: 0 }}>{wm.title}</h3>
@@ -1164,7 +1173,7 @@ export default function App() {
       {page === "lesson" && <LessonPage state={state} setState={setState} setPage={setPage} />}
       {page === "practice" && <PracticePage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, false)} loggedIn={!!user} requireAuth={requireAuth} />}
       {page === "scenario" && scenarioItem && <ScenarioPage item={scenarioItem} state={state} setState={setState} setPage={setPage} fromMisinfo={fromMisinfo} />}
-      {page === "me" && user && <MePage state={state} setPage={setPage} user={user} onLogout={logout} />}
+      {page === "me" && user && <MePage state={state} setState={setState} setPage={setPage} user={user} onLogout={logout} />}
       {page === "weekly" && <WeeklyPage state={state} setPage={setPage} setScenarioItem={setScenarioItem} requireAuth={requireAuth} />}
       {page === "assessment-pre" && <AssessmentPage type="pre" state={state} setState={setState} setPage={setPage} />}
       {page === "assessment-post" && <AssessmentPage type="post" state={state} setState={setState} setPage={setPage} />}

@@ -23,6 +23,7 @@ export interface Module {
 export interface PracticeItem {
   id: string;
   label: string;
+  mechanisms?: number[];
   title: string;
   subtitle: string;
   sourceLabel: string;
