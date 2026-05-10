@@ -516,8 +516,8 @@ function PracticePage({ state, setState, setPage, setScenarioItem, loggedIn, req
 }
 
 // ─── SCENARIO PAGE ─────────────────────────────────────────────────────────
-function ScenarioPage({ item, state, setState, setPage, fromMisinfo }: {
-  item: PracticeItem; state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void; fromMisinfo?: boolean;
+function ScenarioPage({ item, state, setState, setPage, scenarioBack }: {
+  item: PracticeItem; state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void; scenarioBack?: "learning" | "practice" | "weekly";
 }) {
   const [step, setStep] = useState(1);
   const [q1Ans, setQ1Ans] = useState<number | null>(null);
@@ -528,7 +528,8 @@ function ScenarioPage({ item, state, setState, setPage, fromMisinfo }: {
   const [q3Submitted, setQ3Submitted] = useState(false);
 
   const correctMechanisms = item.mechanisms || [0];
-  const back = fromMisinfo ? "learning" : "practice";
+  const back = scenarioBack ?? "practice";
+  const backLabel = back === "learning" ? "Learning" : back === "weekly" ? "Weekly" : "Practice";
 
   function confirmQ1() {
     if (q1Ans === null) return;
@@ -575,7 +576,7 @@ function ScenarioPage({ item, state, setState, setPage, fromMisinfo }: {
 
   return (
     <div className="page-wrap">
-      <button className="back-btn" onClick={() => setPage(back)}>← Back to {fromMisinfo ? "Learning" : "Practice"}</button>
+      <button className="back-btn" onClick={() => setPage(back)}>← Back to {backLabel}</button>
 
       <div className="steps-wrap">
         {steps.map((s, i) => (
@@ -672,7 +673,7 @@ function ScenarioPage({ item, state, setState, setPage, fromMisinfo }: {
                 <p className="verdict-line"><strong>Tactic:</strong> {item.tactic}</p>
                 <p className="verdict-line"><strong>Reference:</strong> {item.reference}</p>
               </div>
-              <button className="btn btn-primary" style={{ width: "100%", marginTop: "1rem" }} onClick={() => setPage(back)}>Back to {fromMisinfo ? "Learning" : "Practice Hub"}</button>
+              <button className="btn btn-primary" style={{ width: "100%", marginTop: "1rem" }} onClick={() => setPage(back)}>Back to {backLabel}</button>
             </>
           )}
         </div>
@@ -699,11 +700,10 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
   const continueModule = state.lastLearningModule !== null && !(state.keyCheckPassed || []).includes(state.lastLearningModule)
     ? state.lastLearningModule : null;
 
-  const practiceSetEarned = state.completedPractices.length > 0 &&
-    state.completedPractices.every((id) => {
-      const r = state.practiceResults[id];
-      return r && r.q1 && r.q2 && r.q3 === true;
-    });
+  const practiceSetEarned = practiceItems.every((item) => {
+    const r = state.practiceResults[item.id];
+    return r && r.q1 && r.q2 && r.q3 === true;
+  });
 
   const badges = [
     { emoji: "📋", name: "Baseline Set", earned: state.selfAssessments.initial.completed, desc: "Initial assessment complete" },
@@ -713,9 +713,8 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
     { emoji: "🍒", name: "Cherry Picker", earned: (state.keyCheckPassed || []).includes(3), desc: "Module 4 key check passed" },
     { emoji: "📊", name: "Data Analyst", earned: (state.keyCheckPassed || []).includes(4), desc: "Module 5 key check passed" },
     { emoji: "🎓", name: "Full Curriculum", earned: allKeyChecksDone, desc: "All 5 key checks passed" },
-    { emoji: "🏋️", name: "Practice Set", earned: practiceSetEarned, desc: "All practiced scenarios fully correct" },
-    { emoji: "🎯", name: "Post-test Taken", earned: state.selfAssessments.final.completed, desc: "Final assessment completed" },
-    { emoji: "📈", name: "Growth Champion", earned: growthPoints !== null && growthPoints > 0, desc: "Post-test beats pre-test" },
+    { emoji: "🏋️", name: "Practice Set", earned: practiceSetEarned, desc: "All 50 practice scenarios fully correct" },
+    { emoji: "📈", name: "Growth Champion", earned: growthPoints !== null && growthPoints > 0, desc: "Post-test score beats pre-test score" },
   ];
   const earnedCount = badges.filter((b) => b.earned).length;
 
@@ -854,8 +853,8 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
 }
 
 // ─── WEEKLY PAGE ────────────────────────────────────────────────────────────
-function WeeklyPage({ state, setPage, setScenarioItem, requireAuth }: {
-  state: AppState; setPage: (p: Page) => void; setScenarioItem: (item: PracticeItem) => void; requireAuth: (action: () => void) => void;
+function WeeklyPage({ state, setPage, openScenario, requireAuth }: {
+  state: AppState; setPage: (p: Page) => void; openScenario: (item: PracticeItem) => void; requireAuth: (action: () => void) => void;
 }) {
   const today = new Date();
   const allPublished = getWeeklyModules().filter((w) => w.published && !w.deleted).sort((a, b) => a.sortOrder - b.sortOrder);
@@ -870,7 +869,7 @@ function WeeklyPage({ state, setPage, setScenarioItem, requireAuth }: {
 
   function openLinkedScenario(practiceId: string) {
     const found = practiceId === "misinfo-week" ? misinfoThisWeekItem : practiceItems.find((p) => p.id === practiceId);
-    if (found) requireAuth(() => { setScenarioItem(found); setPage("scenario"); });
+    if (found) requireAuth(() => openScenario(found));
   }
 
   const misinfoWeekDone = state.completedPractices.includes("misinfo-week");
@@ -1136,7 +1135,7 @@ export default function App() {
   const [state, setStateRaw] = useState<AppState>(loadState);
   const [page, setPage] = useState<Page>("learning");
   const [scenarioItem, setScenarioItem] = useState<PracticeItem | null>(null);
-  const [fromMisinfo, setFromMisinfo] = useState(false);
+  const [scenarioBack, setScenarioBack] = useState<"learning" | "practice" | "weekly">("practice");
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginReason, setLoginReason] = useState<string | undefined>(undefined);
   const pendingActionRef = useRef<(() => void) | null>(null);
@@ -1148,8 +1147,8 @@ export default function App() {
     saveTimer.current = setTimeout(() => saveState(s), 300);
   }
 
-  function openScenario(item: PracticeItem, misinfo = false) {
-    setScenarioItem(item); setFromMisinfo(misinfo); setPage("scenario");
+  function openScenario(item: PracticeItem, back: "learning" | "practice" | "weekly" = "practice") {
+    setScenarioItem(item); setScenarioBack(back); setPage("scenario");
   }
 
   function requireAuth(action: () => void) {
@@ -1172,12 +1171,12 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <Navbar page={page} setPage={setPage} user={user} onSignIn={openSignIn} onLogout={logout} requireAuth={requireAuth} />
-      {page === "learning" && <LearningPage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, true)} userName={user ? user.name : "Guest"} loggedIn={!!user} requireAuth={requireAuth} />}
+      {page === "learning" && <LearningPage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, "learning")} userName={user ? user.name : "Guest"} loggedIn={!!user} requireAuth={requireAuth} />}
       {page === "lesson" && <LessonPage state={state} setState={setState} setPage={setPage} />}
-      {page === "practice" && <PracticePage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, false)} loggedIn={!!user} requireAuth={requireAuth} />}
-      {page === "scenario" && scenarioItem && <ScenarioPage item={scenarioItem} state={state} setState={setState} setPage={setPage} fromMisinfo={fromMisinfo} />}
+      {page === "practice" && <PracticePage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, "practice")} loggedIn={!!user} requireAuth={requireAuth} />}
+      {page === "scenario" && scenarioItem && <ScenarioPage item={scenarioItem} state={state} setState={setState} setPage={setPage} scenarioBack={scenarioBack} />}
       {page === "me" && user && <MePage state={state} setState={setState} setPage={setPage} user={user} onLogout={logout} />}
-      {page === "weekly" && <WeeklyPage state={state} setPage={setPage} setScenarioItem={setScenarioItem} requireAuth={requireAuth} />}
+      {page === "weekly" && <WeeklyPage state={state} setPage={setPage} openScenario={(item) => openScenario(item, "weekly")} requireAuth={requireAuth} />}
       {page === "assessment-pre" && <AssessmentPage type="pre" state={state} setState={setState} setPage={setPage} />}
       {page === "assessment-post" && <AssessmentPage type="post" state={state} setState={setState} setPage={setPage} />}
       {loginOpen && <LoginModal reason={loginReason} onAuth={handleAuth} onClose={() => { setLoginOpen(false); pendingActionRef.current = null; }} />}
