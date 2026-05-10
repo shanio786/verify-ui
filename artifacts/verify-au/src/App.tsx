@@ -1,6 +1,23 @@
 import { useState, useRef } from "react";
-import { moduleData, practiceItems, selfSkillsAssessmentData, misinfoThisWeekItem } from "./data";
+import { moduleData, practiceItems, selfSkillsAssessmentData, misinfoThisWeekItem, MECHANISM_OPTIONS } from "./data";
 import type { PracticeItem, AssessItem } from "./data";
+
+// Maps each practice scenario to the primary mechanism/tactic from the 5 modules (0-4)
+const MECHANISM_ANSWERS: Record<string, number> = {
+  'practice-01': 2, 'practice-02': 3, 'practice-03': 0, 'practice-04': 1,
+  'practice-05': 2, 'practice-06': 2, 'practice-07': 1, 'practice-08': 1,
+  'practice-09': 1, 'practice-10': 4, 'practice-11': 0, 'practice-12': 1,
+  'practice-13': 0, 'practice-14': 2, 'practice-15': 2, 'practice-16': 2,
+  'practice-17': 0, 'practice-18': 1, 'practice-19': 0, 'practice-20': 2,
+  'practice-21': 2, 'practice-22': 2, 'practice-23': 3, 'practice-24': 1,
+  'practice-25': 3, 'practice-26': 2, 'practice-27': 0, 'practice-28': 1,
+  'practice-29': 0, 'practice-30': 1, 'practice-31': 4, 'practice-32': 2,
+  'practice-33': 0, 'practice-34': 4, 'practice-35': 2, 'practice-36': 2,
+  'practice-37': 1, 'practice-38': 2, 'practice-39': 2, 'practice-40': 0,
+  'practice-41': 3, 'practice-42': 2, 'practice-43': 0, 'practice-44': 0,
+  'practice-45': 2, 'practice-46': 0, 'practice-47': 0, 'practice-48': 2,
+  'practice-49': 3, 'practice-50': 0,
+};
 
 type Page = "learning" | "practice" | "me" | "lesson" | "scenario" | "assessment-pre" | "assessment-post";
 
@@ -31,10 +48,10 @@ function saveRegistry(r: Record<string, User>) {
 }
 
 interface AppState {
-  completedModules: number[];
+  completedModules: number[];       // modules where Key Check is passed
   moduleNeedsReview: number[];
   completedPractices: string[];
-  practiceResults: Record<string, { q1: boolean; q2: boolean }>;
+  practiceResults: Record<string, { q1: boolean; q2: boolean; q3: boolean }>;
   currentModule: number;
   currentCard: number;
   lastLearningModule: number | null;
@@ -376,10 +393,131 @@ function LearningPage({
   );
 }
 
+// ─── KEY CHECK QUIZ ─────────────────────────────────────────────────────────
+function KeyCheckQuiz({ modIdx, state, setState, setPage }: {
+  modIdx: number; state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
+}) {
+  const mod = moduleData[modIdx];
+  const qs = mod.keyCheck;
+  const [answers, setAnswers] = useState<(number | null)[]>(new Array(qs.length).fill(null));
+  const [submitted, setSubmitted] = useState(false);
+  const [qIdx, setQIdx] = useState(0);
+
+  const allAnswered = answers.every((a) => a !== null);
+  const allCorrect = submitted && answers.every((a, i) => a === qs[i].correct);
+  const wrongIndices = submitted ? answers.map((a, i) => a !== qs[i].correct) : [];
+
+  function submit() {
+    if (!allAnswered) return;
+    setSubmitted(true);
+  }
+
+  function pass() {
+    const newDone = state.completedModules.includes(modIdx)
+      ? state.completedModules : [...state.completedModules, modIdx];
+    setState({ ...state, completedModules: newDone, posttestUnlocked: newDone.length === moduleData.length });
+    setPage("learning");
+  }
+
+  function retry() {
+    setAnswers(new Array(qs.length).fill(null));
+    setSubmitted(false);
+    setQIdx(0);
+  }
+
+  if (!submitted) {
+    const q = qs[qIdx];
+    const isLast = qIdx === qs.length - 1;
+    return (
+      <div className="page-wrap">
+        <button className="back-btn" onClick={() => setPage("learning")}>← Back to Learning Hub</button>
+        <div className="card assess-wrap">
+          <div style={{ marginBottom: "1rem" }}>
+            <div style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", letterSpacing: "0.06em", marginBottom: "0.3rem" }}>
+              Key Check — {mod.title}
+            </div>
+            <h2 style={{ fontWeight: 800, fontSize: "1.15rem", marginBottom: "0.4rem" }}>
+              Question {qIdx + 1} of {qs.length}
+            </h2>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${((qIdx) / qs.length) * 100}%` }} />
+            </div>
+            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.4rem" }}>
+              Answer all questions correctly to complete this module.
+            </p>
+          </div>
+          <p style={{ fontWeight: 700, fontSize: "0.97rem", marginBottom: "0.75rem", lineHeight: 1.5 }}>{q.q}</p>
+          {q.options.map((opt, i) => (
+            <button
+              key={i}
+              className={`option-btn${answers[qIdx] === i ? " selected" : ""}`}
+              onClick={() => {
+                const a = [...answers]; a[qIdx] = i; setAnswers(a);
+              }}
+            >{opt}</button>
+          ))}
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.75rem" }}>
+            <button className="btn btn-outline" onClick={() => setQIdx(Math.max(0, qIdx - 1))} disabled={qIdx === 0}>← Back</button>
+            {!isLast
+              ? <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setQIdx(qIdx + 1)} disabled={answers[qIdx] === null}>Next →</button>
+              : <button className="btn btn-primary" style={{ flex: 1 }} onClick={submit} disabled={!allAnswered}>Submit Key Check</button>
+            }
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-wrap">
+      <div className="card assess-wrap" style={{ textAlign: "center" }}>
+        <div style={{ fontSize: "3rem", marginBottom: "0.5rem" }}>{allCorrect ? "🎉" : "📖"}</div>
+        <h2 style={{ fontWeight: 800, fontSize: "1.3rem", marginBottom: "0.3rem" }}>
+          {allCorrect ? "Key Check Passed!" : "Not quite — review and retry"}
+        </h2>
+        <p style={{ fontSize: "0.87rem", color: "var(--text-muted)", marginBottom: "1.2rem" }}>
+          {allCorrect
+            ? `You answered all ${qs.length} questions correctly. Module unlocked!`
+            : `You need all ${qs.length} correct to pass. Review the cards and try again.`}
+        </p>
+        {qs.map((q, i) => {
+          const correct = answers[i] === q.correct;
+          return (
+            <div key={i} style={{ textAlign: "left", border: `1px solid ${correct ? "#86efac" : "#fca5a5"}`, borderRadius: 8, padding: "0.65rem 0.85rem", marginBottom: "0.5rem", background: correct ? "#f0fdf4" : "#fef2f2" }}>
+              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: correct ? "#166534" : "#991b1b", marginBottom: "3px" }}>
+                {correct ? "✓ Correct" : "✗ Incorrect"}
+              </div>
+              <div style={{ fontSize: "0.82rem" }}>
+                <strong>Your answer:</strong> {answers[i] !== null ? q.options[answers[i]!] : "—"}
+                {!correct && <><br /><strong>Correct:</strong> {q.options[q.correct]}</>}
+              </div>
+            </div>
+          );
+        })}
+        {allCorrect ? (
+          <button className="btn btn-success" style={{ marginTop: "1rem", width: "100%" }} onClick={pass}>
+            Continue to Learning Hub →
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+            <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setPage("lesson")}>
+              ← Review Cards
+            </button>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={retry}>
+              Retry Key Check
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── LESSON (FLASHCARD) PAGE ────────────────────────────────────────────────
 function LessonPage({ state, setState, setPage }: {
   state: AppState; setState: (s: AppState) => void; setPage: (p: Page) => void;
 }) {
+  const [showKeyCheck, setShowKeyCheck] = useState(false);
   const mod = moduleData[state.currentModule];
   const cardIdx = state.currentCard;
   const card = mod.cards[cardIdx];
@@ -390,18 +528,8 @@ function LessonPage({ state, setState, setPage }: {
   function next() { if (cardIdx < total - 1) setState({ ...state, currentCard: cardIdx + 1 }); }
   function prev() { if (cardIdx > 0) setState({ ...state, currentCard: cardIdx - 1 }); }
 
-  function markComplete() {
-    const newDone = state.completedModules.includes(state.currentModule)
-      ? state.completedModules : [...state.completedModules, state.currentModule];
-    setState({ ...state, completedModules: newDone, posttestUnlocked: newDone.length === moduleData.length });
-    setPage("learning");
-  }
-
-  function markReview() {
-    const newReview = state.moduleNeedsReview.includes(state.currentModule)
-      ? state.moduleNeedsReview : [...state.moduleNeedsReview, state.currentModule];
-    setState({ ...state, moduleNeedsReview: newReview });
-    setPage("learning");
+  if (showKeyCheck) {
+    return <KeyCheckQuiz modIdx={state.currentModule} state={state} setState={setState} setPage={setPage} />;
   }
 
   return (
@@ -437,21 +565,20 @@ function LessonPage({ state, setState, setPage }: {
         <button className="btn btn-outline" onClick={prev} disabled={cardIdx === 0}>← Previous</button>
         {!isLast ? (
           <button className="btn btn-primary" onClick={next}>Next →</button>
+        ) : isDone ? (
+          <button className="btn btn-outline" onClick={() => setPage("learning")}>← Back to Hub</button>
         ) : (
-          <button className="btn btn-success" onClick={markComplete}>Complete Module ✓</button>
+          <button className="btn btn-success" onClick={() => setShowKeyCheck(true)}>Take Key Check ✓</button>
         )}
       </div>
 
       {isLast && !isDone && (
         <div className="complete-box">
-          <strong>You've reached the end of this module!</strong>
+          <strong>All cards complete — time for the Key Check!</strong>
           <p style={{ fontSize: "0.86rem", color: "#374151", margin: "0.5rem 0 0.85rem" }}>
-            Mark it as done to track progress, or flag for review.
+            Answer {mod.keyCheck.length} short questions correctly to unlock this module. Unlimited retries allowed.
           </p>
-          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
-            <button className="btn btn-outline btn-sm" onClick={markReview}>Flag for Review</button>
-            <button className="btn btn-success btn-sm" onClick={markComplete}>Mark Done &amp; Continue</button>
-          </div>
+          <button className="btn btn-success btn-sm" onClick={() => setShowKeyCheck(true)}>Start Key Check →</button>
         </div>
       )}
     </div>
@@ -523,7 +650,8 @@ function PracticePage({
           <div className="practice-card-grid">
             {done.map((item) => {
               const res = state.practiceResults[item.id];
-              const bothRight = res?.q1 && res?.q2;
+              const allRight = res?.q1 && res?.q2 && res?.q3;
+              const someRight = res?.q1 && res?.q2;
               return (
                 <div key={item.id} className="pcard done-card" onClick={() => openItem(item)}>
                   <div className="src-chip">{item.sourceLabel}</div>
@@ -531,10 +659,10 @@ function PracticePage({
                   <h4 style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: "0.4rem", lineHeight: 1.4 }}>{item.title}</h4>
                   <span style={{
                     fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: "999px",
-                    background: bothRight ? "#dcfce7" : "#fee2e2",
-                    color: bothRight ? "#166534" : "#991b1b"
+                    background: allRight ? "#dcfce7" : someRight ? "#fef9c3" : "#fee2e2",
+                    color: allRight ? "#166534" : someRight ? "#854d0e" : "#991b1b"
                   }}>
-                    {bothRight ? "✓ Both correct" : "Needs review"}
+                    {allRight ? "✓ Full analysis correct" : someRight ? "Tactic needs review" : "Needs review"}
                   </span>
                 </div>
               );
@@ -556,8 +684,13 @@ function ScenarioPage({
   const [step, setStep] = useState(1);
   const [q1Ans, setQ1Ans] = useState<number | null>(null);
   const [q2Ans, setQ2Ans] = useState<string | null>(null);
+  const [q3Ans, setQ3Ans] = useState<number | null>(null);
   const [confirmed1, setConfirmed1] = useState(false);
   const [confirmed2, setConfirmed2] = useState(false);
+  const [confirmed3, setConfirmed3] = useState(false);
+
+  const q3Correct = MECHANISM_ANSWERS[item.id] ?? null;
+  const hasMechanism = q3Correct !== null && item.id !== "misinfo-week";
 
   function confirmQ1() {
     if (q1Ans === null) return;
@@ -568,19 +701,36 @@ function ScenarioPage({
   function confirmQ2() {
     if (!q2Ans) return;
     setConfirmed2(true);
+    setTimeout(() => setStep(hasMechanism ? 3 : 4), 500);
+  }
+
+  function confirmQ3() {
+    if (q3Ans === null) return;
+    setConfirmed3(true);
     if (item.id !== "misinfo-week") {
       const q1C = q1Ans === item.q1Correct;
       const q2C = q2Ans === item.q2Correct;
+      const q3C = q3Ans === q3Correct;
       const newCompleted = state.completedPractices.includes(item.id)
         ? state.completedPractices : [...state.completedPractices, item.id];
-      setState({ ...state, completedPractices: newCompleted, practiceResults: { ...state.practiceResults, [item.id]: { q1: q1C, q2: q2C } } });
+      setState({
+        ...state,
+        completedPractices: newCompleted,
+        practiceResults: { ...state.practiceResults, [item.id]: { q1: q1C, q2: q2C, q3: q3C } }
+      });
     }
-    setStep(3);
+    setTimeout(() => setStep(4), 500);
   }
 
   const q1C = q1Ans === item.q1Correct;
   const q2C = q2Ans === item.q2Correct;
+  const q3C = q3Ans === q3Correct;
   const back = fromMisinfo ? "learning" : "practice";
+
+  const steps = hasMechanism
+    ? [{ label: "1. Identify Claim" }, { label: "2. Judge Claim" }, { label: "3. Spot Tactic" }, { label: "4. Result" }]
+    : [{ label: "1. Identify Claim" }, { label: "2. Judge Claim" }, { label: "3. Result" }];
+  const resultStep = hasMechanism ? 4 : 3;
 
   return (
     <div className="page-wrap">
@@ -588,10 +738,10 @@ function ScenarioPage({
 
       {/* Step indicator */}
       <div className="steps-wrap">
-        {[{ label: "1. Identify Claim" }, { label: "2. Judge Claim" }, { label: "3. Result" }].map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, flex: i < 2 ? 1 : undefined }}>
+        {steps.map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 4, flex: i < steps.length - 1 ? 1 : undefined }}>
             <span className={`step-pill${step === i + 1 ? " active" : step > i + 1 ? " done-step" : ""}`}>{s.label}</span>
-            {i < 2 && <div className="step-line" />}
+            {i < steps.length - 1 && <div className="step-line" />}
           </div>
         ))}
       </div>
@@ -642,10 +792,32 @@ function ScenarioPage({
             </>
           )}
 
-          {step === 3 && (
+          {step === 3 && hasMechanism && (
+            <>
+              <h3 style={{ fontWeight: 700, marginBottom: "0.7rem" }}>3. Spot the Tactic</h3>
+              <p style={{ fontSize: "0.87rem", color: "var(--text-muted)", marginBottom: "0.9rem" }}>
+                Which disinformation mechanism best describes what this post uses?
+              </p>
+              {MECHANISM_OPTIONS.map((opt, i) => {
+                let cls = "option-btn";
+                if (confirmed3) { if (i === q3Correct) cls += " correct"; else if (i === q3Ans) cls += " incorrect"; }
+                else if (q3Ans === i) cls += " selected";
+                return <button key={i} className={cls} onClick={() => !confirmed3 && setQ3Ans(i)} disabled={confirmed3}>{opt}</button>;
+              })}
+              <button className="btn btn-primary" style={{ width: "100%", marginTop: "0.4rem" }} onClick={confirmQ3} disabled={q3Ans === null}>
+                Confirm Tactic
+              </button>
+            </>
+          )}
+
+          {step === resultStep && (
             <>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
-                {[{ label: `Claim: ${q1C ? "✓" : "✗"}`, ok: q1C }, { label: `Verdict: ${q2C ? "✓" : "✗"}`, ok: q2C }].map((b) => (
+                {[
+                  { label: `Claim: ${q1C ? "✓" : "✗"}`, ok: q1C },
+                  { label: `Verdict: ${q2C ? "✓" : "✗"}`, ok: q2C },
+                  ...(hasMechanism ? [{ label: `Tactic: ${q3C ? "✓" : "✗"}`, ok: q3C }] : []),
+                ].map((b) => (
                   <span key={b.label} style={{
                     padding: "3px 10px", borderRadius: "999px", fontSize: "0.78rem", fontWeight: 700,
                     background: b.ok ? "#dcfce7" : "#fee2e2", color: b.ok ? "#166534" : "#991b1b"
@@ -656,7 +828,9 @@ function ScenarioPage({
                 <h4>Analysis Result</h4>
                 <p className="verdict-line"><strong>Correct Verdict:</strong> <span className="v-chip">{item.q2Verdict}</span></p>
                 <p className="verdict-line"><strong>Analysis:</strong> {item.explanation}</p>
-                <p className="verdict-line"><strong>Tactic / Mechanism:</strong> {item.tactic}</p>
+                {hasMechanism && (
+                  <p className="verdict-line"><strong>Tactic / Mechanism:</strong> <span className="v-chip" style={{ background: "#ede9fe", color: "#5b21b6" }}>{MECHANISM_OPTIONS[q3Correct!]}</span></p>
+                )}
                 <p className="verdict-line"><strong>Reference:</strong> {item.reference}</p>
               </div>
               <button className="btn btn-primary" style={{ width: "100%", marginTop: "1rem" }} onClick={() => setPage(back)}>
@@ -674,15 +848,18 @@ function ScenarioPage({
 function MePage({ state, setPage, user, onLogout }: { state: AppState; setPage: (p: Page) => void; user: User; onLogout: () => void }) {
   const totalPracticed = state.completedPractices.length;
   const correctCount = Object.values(state.practiceResults).filter((r) => r.q1 && r.q2).length;
+  const fullCorrectCount = Object.values(state.practiceResults).filter((r) => r.q1 && r.q2 && r.q3).length;
   const avgScore = totalPracticed > 0 ? Math.round((correctCount / totalPracticed) * 100) : 0;
   const doneModules = state.completedModules.length;
   const allDone = doneModules === moduleData.length;
 
+  const q3CorrectCount = Object.values(state.practiceResults).filter((r) => r.q3).length;
   const badges = [
     { name: "🛡️ Claim Spotter", earned: totalPracticed >= 1, desc: "First scenario done" },
     { name: "🔍 Fact Finder", earned: correctCount >= 3, desc: "3 correct judgements" },
-    { name: "🧠 Logic Pro", earned: allDone, desc: "All modules done" },
-    { name: "⭐ Module Master", earned: doneModules >= 3, desc: "3 modules complete" },
+    { name: "🧠 Logic Pro", earned: allDone, desc: "All modules done (Key Checks passed)" },
+    { name: "⭐ Module Master", earned: doneModules >= 3, desc: "3 modules + Key Checks" },
+    { name: "🎯 Tactic Spotter", earned: q3CorrectCount >= 5, desc: "5 tactics identified correctly" },
     { name: "🎓 Scholar", earned: state.selfAssessments.initial.completed && state.selfAssessments.final.completed, desc: "Both assessments done" },
   ];
 
@@ -708,8 +885,9 @@ function MePage({ state, setPage, user, onLogout }: { state: AppState; setPage: 
             Member since {new Date(user.joinedAt).toLocaleDateString("en-AU", { month: "short", year: "numeric" })}
           </div>
           <div className="stat-row"><span>Scenarios completed</span><strong>{totalPracticed}</strong></div>
-          <div className="stat-row"><span>Modules done</span><strong>{doneModules} / {moduleData.length}</strong></div>
-          <div className="stat-row"><span>Accuracy rate</span><strong>{totalPracticed > 0 ? `${avgScore}%` : "—"}</strong></div>
+          <div className="stat-row"><span>Modules done (Key Check passed)</span><strong>{doneModules} / {moduleData.length}</strong></div>
+          <div className="stat-row"><span>Verdict accuracy</span><strong>{totalPracticed > 0 ? `${avgScore}%` : "—"}</strong></div>
+          <div className="stat-row"><span>Full analysis (3/3 correct)</span><strong>{totalPracticed > 0 ? `${fullCorrectCount}/${totalPracticed}` : "—"}</strong></div>
           <div className="stat-row"><span>Badges earned</span><strong>{badges.filter(b => b.earned).length} / {badges.length}</strong></div>
         </div>
 
