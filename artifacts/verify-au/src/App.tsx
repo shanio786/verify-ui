@@ -1,26 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { moduleData, practiceItems, selfSkillsAssessmentData, misinfoThisWeekItem } from "./data";
 import { getWeeklyModules } from "./admin/adminStore";
 import type { PracticeItem, AssessItem } from "./data";
+import { api } from "./api";
 
 type Page = "learning" | "practice" | "me" | "lesson" | "scenario" | "assessment-pre" | "assessment-post" | "weekly";
 
-interface User { name: string; email: string; joinedAt: string; }
-
-function loadUser(): User | null {
-  try { const raw = localStorage.getItem("verifyAuCurrentUser"); if (raw) return JSON.parse(raw); } catch {}
-  return null;
-}
-function saveUser(u: User | null) {
-  try { if (u) localStorage.setItem("verifyAuCurrentUser", JSON.stringify(u)); else localStorage.removeItem("verifyAuCurrentUser"); } catch {}
-}
-function loadRegistry(): Record<string, User> {
-  try { const raw = localStorage.getItem("verifyAuUserRegistry"); if (raw) return JSON.parse(raw); } catch {}
-  return {};
-}
-function saveRegistry(r: Record<string, User>) {
-  try { localStorage.setItem("verifyAuUserRegistry", JSON.stringify(r)); } catch {}
-}
+interface User { name: string; email: string; joinedAt: string; id?: number; role?: string; }
 
 interface AppState {
   completedModules: number[];
@@ -1106,26 +1092,35 @@ function LoginModal({ onAuth, onClose, reason }: { onAuth: (u: User) => void; on
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   function isValidEmail(e: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     const cleanEmail = email.trim().toLowerCase();
     if (!isValidEmail(cleanEmail)) { setError("Please enter a valid email address."); return; }
-    const registry = loadRegistry();
-    if (mode === "signup") {
-      const cleanName = name.trim();
-      if (cleanName.length < 2) { setError("Please enter your name (at least 2 characters)."); return; }
-      if (registry[cleanEmail]) { setError("This email is already registered. Switch to Login instead."); return; }
-      const user: User = { name: cleanName, email: cleanEmail, joinedAt: new Date().toISOString() };
-      registry[cleanEmail] = user; saveRegistry(registry); saveUser(user); onAuth(user);
-    } else {
-      const user = registry[cleanEmail];
-      if (!user) { setError("No account found for this email. Sign up first."); return; }
-      saveUser(user); onAuth(user);
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const cleanName = name.trim();
+        if (cleanName.length < 2) { setError("Please enter your name (at least 2 characters)."); setLoading(false); return; }
+        const result = await api.auth.register(cleanName, cleanEmail, password);
+        api.auth.saveSession(result.token, result.user);
+        onAuth({ name: result.user.name, email: result.user.email, joinedAt: new Date().toISOString(), id: result.user.id, role: result.user.role });
+      } else {
+        const result = await api.auth.login(cleanEmail, password);
+        api.auth.saveSession(result.token, result.user);
+        onAuth({ name: result.user.name, email: result.user.email, joinedAt: new Date().toISOString(), id: result.user.id, role: result.user.role });
+      }
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -1145,7 +1140,7 @@ function LoginModal({ onAuth, onClose, reason }: { onAuth: (u: User) => void; on
           ))}
         </div>
         <h2 style={{ fontWeight: 800, fontSize: "1.2rem", marginBottom: "0.3rem" }}>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1.1rem" }}>{mode === "signup" ? "Just your name and email — no password needed." : "Enter your email to continue where you left off."}</p>
+        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "1.1rem" }}>{mode === "signup" ? "Your progress is saved to your account — pick up from any device." : "Log in to continue where you left off."}</p>
         <form onSubmit={submit}>
           {mode === "signup" && (
             <div style={{ marginBottom: "0.85rem" }}>
@@ -1157,8 +1152,14 @@ function LoginModal({ onAuth, onClose, reason }: { onAuth: (u: User) => void; on
             <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.3rem" }}>Email address</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoFocus={mode === "login"} style={{ width: "100%", padding: "0.65rem 0.8rem", borderRadius: 8, border: "1.5px solid var(--border)", fontSize: "0.95rem", boxSizing: "border-box" }} />
           </div>
+          <div style={{ marginBottom: "0.85rem" }}>
+            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--text)", marginBottom: "0.3rem" }}>Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={mode === "signup" ? "Min. 6 characters" : "Your password"} style={{ width: "100%", padding: "0.65rem 0.8rem", borderRadius: 8, border: "1.5px solid var(--border)", fontSize: "0.95rem", boxSizing: "border-box" }} />
+          </div>
           {error && <div style={{ background: "#fef2f2", color: "#991b1b", padding: "0.55rem 0.7rem", borderRadius: 8, fontSize: "0.82rem", marginBottom: "0.85rem", border: "1px solid #fecaca" }}>{error}</div>}
-          <button type="submit" className="btn btn-primary" style={{ width: "100%", padding: "0.7rem", fontSize: "0.95rem" }}>{mode === "signup" ? "Create account & Start →" : "Log in →"}</button>
+          <button type="submit" className="btn btn-primary" style={{ width: "100%", padding: "0.7rem", fontSize: "0.95rem" }} disabled={loading}>
+            {loading ? "Please wait..." : mode === "signup" ? "Create account & Start →" : "Log in →"}
+          </button>
         </form>
         <p style={{ textAlign: "center", fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "1.1rem" }}>
           {mode === "signup" ? "Already have an account? " : "New here? "}
@@ -1173,7 +1174,10 @@ function LoginModal({ onAuth, onClose, reason }: { onAuth: (u: User) => void; on
 
 // ─── MAIN APP ───────────────────────────────────────────────────────────────
 export default function App() {
-  const [user, setUser] = useState<User | null>(loadUser);
+  const [user, setUser] = useState<User | null>(() => {
+    const u = api.auth.loadUser();
+    return u ? { name: u.name, email: u.email, joinedAt: new Date().toISOString(), id: u.id, role: u.role } : null;
+  });
   const [state, setStateRaw] = useState<AppState>(loadState);
   const [page, setPage] = useState<Page>("learning");
   const [scenarioItem, setScenarioItem] = useState<PracticeItem | null>(null);
@@ -1183,10 +1187,46 @@ export default function App() {
   const pendingActionRef = useRef<(() => void) | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    if (user) {
+      api.progress.get().then((p) => {
+        setStateRaw((prev) => ({
+          ...prev,
+          completedModules: p.completedModules ?? prev.completedModules,
+          keyCheckPassed: p.keyCheckPassed ?? prev.keyCheckPassed,
+          completedPractices: p.completedPractices ?? prev.completedPractices,
+          practiceResults: p.practiceResults ?? prev.practiceResults,
+          recentActivity: p.recentActivity ?? prev.recentActivity,
+          lastLearningModule: p.lastLearningModule ?? prev.lastLearningModule,
+          lastPage: p.lastPage ?? prev.lastPage,
+          pretestScore: p.pretestScore ?? prev.pretestScore,
+          posttestScore: p.posttestScore ?? prev.posttestScore,
+        }));
+      }).catch(() => {});
+    }
+  }, [user?.email]);
+
   function setState(s: AppState) {
     setStateRaw(s);
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => saveState(s), 300);
+    saveState(s);
+    if (user) {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        api.progress.save({
+          completedModules: s.completedModules,
+          keyCheckPassed: s.keyCheckPassed,
+          completedPractices: s.completedPractices,
+          practiceResults: s.practiceResults,
+          recentActivity: s.recentActivity,
+          lastLearningModule: s.lastLearningModule,
+          lastPage: s.lastPage,
+          pretestScore: s.pretestScore,
+          pretestTotal: selfSkillsAssessmentData.initial.items.length,
+          posttestScore: s.posttestScore,
+          posttestTotal: selfSkillsAssessmentData.final.items.length,
+        }).catch(() => {});
+      }, 500);
+    }
   }
 
   useEffect(() => {
@@ -1196,8 +1236,7 @@ export default function App() {
       setStateRaw((prev) => {
         if (prev.lastPage === lp) return prev;
         const next = { ...prev, lastPage: lp };
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => saveState(next), 300);
+        saveState(next);
         return next;
       });
     }
@@ -1212,7 +1251,7 @@ export default function App() {
   function requireAuth(action: () => void) {
     if (user) { action(); return; }
     pendingActionRef.current = action;
-    setLoginReason("Sign up or log in to continue — your progress will be saved.");
+    setLoginReason("Sign up or log in to continue — your progress will be saved to your account.");
     setLoginOpen(true);
   }
 
@@ -1224,7 +1263,12 @@ export default function App() {
     if (pending) setTimeout(pending, 0);
   }
 
-  function logout() { saveUser(null); setUser(null); setPage("learning"); }
+  async function logout() {
+    await api.auth.logout();
+    setUser(null);
+    setStateRaw({ ...defaultState });
+    setPage("learning");
+  }
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
