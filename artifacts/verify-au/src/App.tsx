@@ -31,6 +31,7 @@ interface AppState {
   currentModule: number;
   currentCard: number;
   lastLearningModule: number | null;
+  lastPage: string | null;
   pretestScore: number | null;
   posttestScore: number | null;
   completedPretest: boolean;
@@ -51,6 +52,7 @@ const defaultState: AppState = {
   currentModule: 0,
   currentCard: 0,
   lastLearningModule: null,
+  lastPage: null,
   pretestScore: null,
   posttestScore: null,
   completedPretest: false,
@@ -255,16 +257,18 @@ function LearningPage({ state, setState, setPage, setScenarioItem, userName, log
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.55rem" }}>
                 <div style={{ width: 34, height: 34, borderRadius: 8, background: moduleColors[idx], display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1rem", flexShrink: 0 }}>{moduleIcons[idx]}</div>
                 <span className="mod-chip">{mod.label}</span>
-                {keyPassed && <span className="mod-tag done">Key Check ✓</span>}
-                {!keyPassed && cardsRead && <span className="mod-tag" style={{ background: "#fffbeb", color: "#92400e", borderColor: "#fcd34d" }}>Cards Read</span>}
+                {keyPassed && <span className="mod-tag done">Complete ✓</span>}
+                {!keyPassed && cardsRead && <span className="mod-tag" style={{ background: "#fffbeb", color: "#92400e", borderColor: "#fcd34d" }}>In Progress</span>}
+                {!keyPassed && !cardsRead && <span className="mod-tag" style={{ background: "#f3f4f6", color: "#6b7280", borderColor: "#e5e7eb" }}>Not Started</span>}
                 {needsReview && <span className="mod-tag review">Review</span>}
               </div>
               <h3>{mod.title}</h3>
               <p style={{ marginBottom: "0.1rem" }}>{mod.desc}</p>
               {keyPassed && <div className="progress-bar"><div className="progress-fill" style={{ width: "100%", background: "var(--success)" }} /></div>}
               {!keyPassed && cardsRead && <div className="progress-bar"><div className="progress-fill" style={{ width: "75%", background: "#f59e0b" }} /></div>}
+              {!keyPassed && !cardsRead && <div className="progress-bar"><div className="progress-fill" style={{ width: "0%" }} /></div>}
               <button className="start-btn" onClick={(e) => { e.stopPropagation(); openModule(idx); }}>
-                {keyPassed ? "↩ Review" : cardsRead ? "🔑 Take Key Check" : "▶ Start Learn"}{lockIcon}
+                {keyPassed ? "↩ Review" : cardsRead ? "🔑 Take Key Check" : "▶ Start"}{lockIcon}
               </button>
             </div>
           );
@@ -686,7 +690,7 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
   const keyCheckCount = (state.keyCheckPassed || []).length;
   const allKeyChecksDone = keyCheckCount === moduleData.length;
 
-  const allCorrectCount = Object.values(state.practiceResults).filter((r) => r.q1 && r.q2 && r.q3 !== false).length;
+  const allCorrectCount = Object.values(state.practiceResults).filter((r) => r.q1 && r.q2 && r.q3 === true).length;
   const practiceAccuracy = totalPracticed > 0 ? Math.round((allCorrectCount / totalPracticed) * 100) : 0;
 
   const pre = state.pretestScore ?? null;
@@ -697,6 +701,12 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
 
   const continueModule = state.lastLearningModule !== null && !(state.keyCheckPassed || []).includes(state.lastLearningModule)
     ? state.lastLearningModule : null;
+
+  const lastPageLabel: Record<string, string> = {
+    learning: "Learning Hub", lesson: "Learning Hub", practice: "Practice Hub",
+    weekly: "Weekly Focus", "assessment-pre": "Self-Assessment", "assessment-post": "Self-Assessment",
+  };
+  const resumePageTarget = state.lastPage && state.lastPage !== "me" ? state.lastPage as Page : null;
 
   const practiceSetEarned = practiceItems.every((item) => {
     const r = state.practiceResults[item.id];
@@ -712,7 +722,6 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
     { emoji: "📊", name: "Data Analyst", earned: (state.keyCheckPassed || []).includes(4), desc: "Module 5 key check passed" },
     { emoji: "🎓", name: "Full Curriculum", earned: allKeyChecksDone, desc: "All 5 key checks passed" },
     { emoji: "🏋️", name: "Practice Set", earned: practiceSetEarned, desc: "All 50 practice scenarios fully correct" },
-    { emoji: "🎯", name: "Post-test Taken", earned: state.selfAssessments.final.completed, desc: "Final assessment completed" },
     { emoji: "📈", name: "Growth Champion", earned: growthPoints !== null && growthPoints > 0, desc: "Post-test score beats pre-test score" },
   ];
   const earnedCount = badges.filter((b) => b.earned).length;
@@ -766,11 +775,18 @@ function MePage({ state, setState, setPage, user, onLogout }: { state: AppState;
           {continueModule !== null && (
             <div style={{ marginTop: "0.85rem", padding: "0.7rem", background: "var(--primary-light)", borderRadius: 8, border: "1.5px solid #93c5fd" }}>
               <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", marginBottom: "0.25rem" }}>Continue where you left off</div>
-              <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: "0.4rem" }}>{moduleData[continueModule].title}</div>
+              <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: "0.2rem" }}>{moduleData[continueModule].title}</div>
               <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.4rem" }}>
                 {(state.completedModules || []).includes(continueModule) ? "Ready for Key Check" : `Card ${state.currentCard + 1} of ${moduleData[continueModule].cards.length}`}
               </div>
-              <button className="btn btn-primary btn-sm" onClick={() => { setState({ ...state, currentModule: continueModule, lastLearningModule: continueModule }); setPage("lesson"); }}>Resume →</button>
+              <button className="btn btn-primary btn-sm" onClick={() => { setState({ ...state, currentModule: continueModule, lastLearningModule: continueModule, lastPage: "lesson" }); setPage("lesson"); }}>Resume Learning →</button>
+            </div>
+          )}
+          {resumePageTarget && resumePageTarget !== "lesson" && (
+            <div style={{ marginTop: "0.65rem", padding: "0.65rem 0.7rem", background: "#f0fdf4", borderRadius: 8, border: "1.5px solid #86efac" }}>
+              <div style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: "var(--success)", marginBottom: "0.25rem" }}>Last visited</div>
+              <div style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: "0.35rem" }}>{lastPageLabel[resumePageTarget] ?? resumePageTarget}</div>
+              <button className="btn btn-sm" style={{ background: "var(--success)", color: "white", border: "none" }} onClick={() => setPage(resumePageTarget)}>Go back →</button>
             </div>
           )}
         </div>
@@ -1172,8 +1188,14 @@ export default function App() {
     saveTimer.current = setTimeout(() => saveState(s), 300);
   }
 
+  function navigateTo(p: Page) {
+    const trackable = ["learning", "lesson", "practice", "weekly", "assessment-pre", "assessment-post"];
+    if (trackable.includes(p)) setState({ ...state, lastPage: p });
+    setPage(p);
+  }
+
   function openScenario(item: PracticeItem, back: "learning" | "practice" | "weekly" = "practice") {
-    setScenarioItem(item); setScenarioBack(back); setPage("scenario");
+    setState({ ...state, lastPage: back }); setScenarioItem(item); setScenarioBack(back); setPage("scenario");
   }
 
   function requireAuth(action: () => void) {
@@ -1195,15 +1217,15 @@ export default function App() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
-      <Navbar page={page} setPage={setPage} user={user} onSignIn={openSignIn} onLogout={logout} requireAuth={requireAuth} />
-      {page === "learning" && <LearningPage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, "learning")} userName={user ? user.name : "Guest"} loggedIn={!!user} requireAuth={requireAuth} />}
-      {page === "lesson" && <LessonPage state={state} setState={setState} setPage={setPage} />}
-      {page === "practice" && <PracticePage state={state} setState={setState} setPage={setPage} setScenarioItem={(item) => openScenario(item, "practice")} loggedIn={!!user} requireAuth={requireAuth} />}
-      {page === "scenario" && scenarioItem && <ScenarioPage item={scenarioItem} state={state} setState={setState} setPage={setPage} scenarioBack={scenarioBack} />}
-      {page === "me" && user && <MePage state={state} setState={setState} setPage={setPage} user={user} onLogout={logout} />}
-      {page === "weekly" && <WeeklyPage state={state} setPage={setPage} openScenario={(item) => openScenario(item, "weekly")} requireAuth={requireAuth} />}
-      {page === "assessment-pre" && <AssessmentPage type="pre" state={state} setState={setState} setPage={setPage} />}
-      {page === "assessment-post" && <AssessmentPage type="post" state={state} setState={setState} setPage={setPage} />}
+      <Navbar page={page} setPage={(p) => { navigateTo(p); }} user={user} onSignIn={openSignIn} onLogout={logout} requireAuth={requireAuth} />
+      {page === "learning" && <LearningPage state={state} setState={setState} setPage={(p) => navigateTo(p)} setScenarioItem={(item) => openScenario(item, "learning")} userName={user ? user.name : "Guest"} loggedIn={!!user} requireAuth={requireAuth} />}
+      {page === "lesson" && <LessonPage state={state} setState={setState} setPage={(p) => navigateTo(p)} />}
+      {page === "practice" && <PracticePage state={state} setState={setState} setPage={(p) => navigateTo(p)} setScenarioItem={(item) => openScenario(item, "practice")} loggedIn={!!user} requireAuth={requireAuth} />}
+      {page === "scenario" && scenarioItem && <ScenarioPage item={scenarioItem} state={state} setState={setState} setPage={(p) => navigateTo(p)} scenarioBack={scenarioBack} />}
+      {page === "me" && user && <MePage state={state} setState={setState} setPage={(p) => navigateTo(p)} user={user} onLogout={logout} />}
+      {page === "weekly" && <WeeklyPage state={state} setPage={(p) => navigateTo(p)} openScenario={(item) => openScenario(item, "weekly")} requireAuth={requireAuth} />}
+      {page === "assessment-pre" && <AssessmentPage type="pre" state={state} setState={setState} setPage={(p) => navigateTo(p)} />}
+      {page === "assessment-post" && <AssessmentPage type="post" state={state} setState={setState} setPage={(p) => navigateTo(p)} />}
       {loginOpen && <LoginModal reason={loginReason} onAuth={handleAuth} onClose={() => { setLoginOpen(false); pendingActionRef.current = null; }} />}
     </div>
   );
